@@ -8,31 +8,22 @@ from langchain_openai import ChatOpenAI
 
 from insight_engine.prompt.knowledge import COCA_COLA
 from insight_engine.prompt.system_prompts import (
-    LITIGATION,
-    MORNING,
-    SWOT,
-    TAXI,
+    PRACTICE_GROUPS,
+    REPORT_STRUCTURES,
     USER_QUERY,
 )
 
 load_dotenv()
 openai_api = os.getenv("OPENAI_API_KEY")
 
-practice_groups = ["litigation"]
+practice_groups = [k for k in PRACTICE_GROUPS.keys()]
 audiences = ["CFO", "CEO", "Chief Legal Counsel", "Chief of Tax", "Head of M&A"]
-output_styles = ["SWOT", "TAXI", "Morning News"]
+output_styles = [k for k in REPORT_STRUCTURES.keys()]
 
 st.title("Insight Report Generator")
 practice_group = st.selectbox("Select Practice Group:", practice_groups)
 audience = st.selectbox("Select Audience:", audiences)
 output_style = st.selectbox("Select Output Style:", output_styles)
-
-sys_prompts = {"litigation": LITIGATION}
-styles = {
-    "SWOT": SWOT,
-    "TAXI": TAXI,
-    "Morning News": MORNING,
-}
 
 
 class StreamHandler(BaseCallbackHandler):
@@ -46,8 +37,8 @@ class StreamHandler(BaseCallbackHandler):
 
 
 if st.button("Generate Report"):
-    sys_prompt = sys_prompts[practice_group]
-    report_structure = styles[output_style]
+    sys_prompt = PRACTICE_GROUPS[practice_group]
+    report_structure = REPORT_STRUCTURES[output_style]
 
     st.session_state["messages"] = [
         ChatMessage(
