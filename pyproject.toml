@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "insight-engine"
+version = "0.1.0"
+description = ""
+authors = ["Adam Osusky <adam.osusky02@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+streamlit = "^1.36.0"
+langchain = "^0.2.6"
+langchain-openai = "^0.1.13"
+python-dotenv = "^1.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
