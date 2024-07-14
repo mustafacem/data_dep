@@ -1,0 +1,3 @@
+[submodule "droid-core"]
+	path = droid-core
+	url = git@github.com:knowdroids/droid-core.git
