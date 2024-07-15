@@ -166,4 +166,4 @@ scratch/
 
 # docker in vs code
 .devcontainer/
-.github/
+.github/dependabot.yml
