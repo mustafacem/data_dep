@@ -1,0 +1,10 @@
+services:
+  researchdroid:
+    image: "knowdroids:5000/insight_engine"
+    build:
+      dockerfile: Dockerfile
+    volumes:
+      - mounted_data:/app/mounted_data
+
+volumes:
+  mounted_data:
