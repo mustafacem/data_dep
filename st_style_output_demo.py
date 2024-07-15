@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import ChatMessage
 from langchain_openai import ChatOpenAI
+from streamlit.delta_generator import DeltaGenerator
 
 from insight_engine.prompt.knowledge import COCA_COLA
 from insight_engine.prompt.system_prompts import (
@@ -15,6 +16,8 @@ from insight_engine.prompt.system_prompts import (
 
 load_dotenv()
 openai_api = os.getenv("OPENAI_API_KEY")
+if openai_api is None:
+    raise ValueError("OpenAI key not specified!")
 
 practice_groups = [k for k in PRACTICE_GROUPS.keys()]
 audiences = ["CFO", "CEO", "Chief Legal Counsel", "Chief of Tax", "Head of M&A"]
@@ -27,7 +30,7 @@ output_style = st.selectbox("Select Output Style:", output_styles)
 
 
 class StreamHandler(BaseCallbackHandler):
-    def __init__(self, container, initial_text=""):
+    def __init__(self, container: DeltaGenerator, initial_text: str = "") -> None:
         self.container = container
         self.text = initial_text
 
@@ -36,7 +39,7 @@ class StreamHandler(BaseCallbackHandler):
         self.container.markdown(self.text)
 
 
-if st.button("Generate Report"):
+if st.button("Generate Report") and practice_group and output_style:
     sys_prompt = PRACTICE_GROUPS[practice_group]
     report_structure = REPORT_STRUCTURES[output_style]
 
@@ -53,7 +56,6 @@ if st.button("Generate Report"):
         stream_handler = StreamHandler(st.empty())
         llm = ChatOpenAI(
             model="gpt-3.5-turbo-0125",
-            api_key=openai_api,
             streaming=True,
             callbacks=[stream_handler],
         )
