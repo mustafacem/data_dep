@@ -1,33 +1,110 @@
 import os
-
 import streamlit as st
 from dotenv import load_dotenv
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import ChatMessage
 from langchain_openai import ChatOpenAI
+from langchain_text_splitters import CharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
 from streamlit.delta_generator import DeltaGenerator
-
 from insight_engine.prompt.knowledge import COCA_COLA
 from insight_engine.prompt.system_prompts import (
     PRACTICE_GROUPS,
     REPORT_STRUCTURES,
     USER_QUERY,
 )
+import tempfile
+import matplotlib.pyplot as plt
+import base64
+from io import BytesIO
+from PIL import Image
+from insight_engine.pdf_extraction.pdf_extraction_c import (
+    create_multi_vector_retriever, 
+    generate_img_summaries, 
+    call_for_answer, 
+    extract_pdf_elements, 
+    categorize_elements,
+    generate_text_summaries,
+    topic_extraction, 
+    create_keyword_network,
+    print_node_values_sorted, 
+    generate_word_cloud, 
+    multi_modal_rag_chain,
+    topic_extraction_top10,
+    extract_words,
+    generate_word_cloud_2,
+    visualize_network,
+    topic_extraction_top10_gpt4,
+    topic_extraction_gpt4,
+    topic_extraction_top10_gpt4_topic,
+    topic_extraction_gpt4_topic
+)
+alg = """
+1. Extracting Keywords Using AI
 
+    Text Preprocessing: The text is cleaned and tokenized, removing irrelevant characters and breaking it down into individual words or phrases.
+    Keyword Extraction: An AI model (e.g., GPT-3.5) is used to analyze the text and identify distinct keywords. These keywords are extracted based on their frequency and contextual relevance.
+    Output: The result is a list of extracted keywords that are semantically significant to the text.
+
+2. Determining Keyword Importance
+
+    Contextual Analysis: Each keyword is analyzed in the context of the entire text to understand its relevance.
+    Determine top10 keywords : AI models assess and determines if it is fit be in top10 to each keyword based on their contextual importance and relevance to the main themes of the text.
+    Output: A ranked list of keywords with their respective importance scores is produced.
+
+3. Generating Keyword Network
+
+    Co-occurrence Matrix: A matrix is created to record how frequently each pair of keywords appears together in the text. This involves scanning the text and counting the occurrences of keyword pairs within a defined window of words.
+    Network Graph: A graph is generated where each keyword is a node, and the edges represent the co-occurrence frequency between pairs of keywords. The weight of each edge corresponds to the number of times the connected keywords appear together.
+    Output: A network graph visually representing the relationships between keywords is created.
+
+4. Boosting Referral Scores
+
+    Adjusting Scores: The co-occurrence scores of keywords are adjusted. 
+    Final Scores: The final scores for each keyword are calculated, which will determine their visual prominence in the word cloud.
+    Output: Keywords' final scores are boosted to reflect their importance in the text.
+
+5. Generating the Word Cloud
+
+    Font Size Calculation: The font size of each keyword in the word cloud is determined based on its final score. Keywords with higher scores appear larger and more prominent.
+    Visualization: Word cloud generation tools are used to create a visual representation of the keywords. The most important and frequently referred keywords are highlighted, ensuring they stand out.
+"""
+from transformers import GPT2Tokenizer
+# Initialize the tokenizer
+tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+
+def truncate_to_token_limit(text, token_limit=3998 ):
+    # Tokenize the text
+    tokens = tokenizer.encode(text)
+    
+    # Truncate the tokens if they exceed the limit
+    if len(tokens) > token_limit:
+        tokens = tokens[:token_limit]
+    
+    # Decode the tokens back to text
+    truncated_text = tokenizer.decode(tokens)
+    
+    return truncated_text
+
+
+# Load environment variables
 load_dotenv()
+dotenv_path = 'op.env'
+load_dotenv(dotenv_path)
 openai_api = os.getenv("OPENAI_API_KEY")
 if openai_api is None:
     raise ValueError("OpenAI key not specified!")
 
+# Streamlit UI elements
+st.title("Insight Report Generator")
 practice_groups = [k for k in PRACTICE_GROUPS.keys()]
 audiences = ["CFO", "CEO", "Chief Legal Counsel", "Chief of Tax", "Head of M&A"]
 output_styles = [k for k in REPORT_STRUCTURES.keys()]
 
-st.title("Insight Report Generator")
 practice_group = st.selectbox("Select Practice Group:", practice_groups)
 audience = st.selectbox("Select Audience:", audiences)
 output_style = st.selectbox("Select Output Style:", output_styles)
-
 
 class StreamHandler(BaseCallbackHandler):
     def __init__(self, container: DeltaGenerator, initial_text: str = "") -> None:
@@ -38,7 +115,7 @@ class StreamHandler(BaseCallbackHandler):
         self.text += token
         self.container.markdown(self.text)
 
-
+# Generate Report button functionality
 if st.button("Generate Report") and practice_group and output_style:
     sys_prompt = PRACTICE_GROUPS[practice_group]
     report_structure = REPORT_STRUCTURES[output_style]
@@ -63,3 +140,200 @@ if st.button("Generate Report") and practice_group and output_style:
         st.session_state.messages.append(
             ChatMessage(role="assistant", content=response.content)
         )
+
+# PDF File Uploader functionality
+st.header("Upload a single PDF report")
+uploaded_file = st.file_uploader("Upload PDF report here:", type=['pdf'], key='single_pdf')
+if uploaded_file and not st.session_state.get("single_pdf_processed", False):
+    st.success("PDF file uploaded successfully!")
+
+    spesefic_topic = st.text_input("Enter spesefic topic if desired:")
+    if st.button("Proceed with text processing"):
+        temp_file = tempfile.NamedTemporaryFile(delete=False)
+        temp_file.write(uploaded_file.read())
+        st.markdown(f"Uploaded PDF file path: `{temp_file.name}`")
+
+        input_path = os.getcwd()
+        output_path = os.path.join(os.getcwd(), "output")
+        raw_pdf_elements = extract_pdf_elements(temp_file.name, output_path, 4000, 500, 300)
+        texts, tables = categorize_elements(raw_pdf_elements)
+
+        text_splitter = CharacterTextSplitter.from_tiktoken_encoder(chunk_size=4000, chunk_overlap=0)
+        joined_texts = " ".join(texts)
+        texts_4k_token = text_splitter.split_text(joined_texts)
+
+        text_summaries, table_summaries = generate_text_summaries(texts_4k_token, tables, summarize_texts=True)
+        img_base64_list, image_summaries = generate_img_summaries("figures")
+
+        vectorstore = Chroma(
+            collection_name="mm_rag_cj_blog", embedding_function=OpenAIEmbeddings()
+        )
+
+        retriever_multi_vector_img = create_multi_vector_retriever(
+            vectorstore,
+            text_summaries,
+            texts,
+            table_summaries,
+            tables,
+            image_summaries,
+            img_base64_list,
+        )
+        chain_multimodal_rag = multi_modal_rag_chain(retriever_multi_vector_img)
+
+        query = "Line graph displaying a fluctuating trend over fiscal years from 2004 to 2022"
+        docs = retriever_multi_vector_img.get_relevant_documents(query, limit=6)
+
+        whole_str = ' '.join(text_summaries)
+        #network = network = create_keyword_network(truncate_to_token_limit(whole_str), topic_extraction(truncate_to_token_limit(whole_str)).split(","))
+        #sorted_nodes = print_node_values_sorted(network)
+        max_attempts = 25
+        attempts = 0
+        achieved = False
+        with st.expander("Show Algorithm", expanded=False):
+            st.write(alg)
+        while attempts < max_attempts and not achieved:
+            try:
+                if spesefic_topic == "" :
+                    sized_down_whole_text =  truncate_to_token_limit(whole_str)
+                    keywords= topic_extraction(sized_down_whole_text).split(",")
+                    top_10 = topic_extraction_top10_gpt4(whole_str, topic_extraction(whole_str).split(","))
+                else:
+                    sized_down_whole_text =  truncate_to_token_limit(whole_str)
+                    keywords= topic_extraction(sized_down_whole_text).split(",")
+                    top_10 = topic_extraction_top10_gpt4_topic(whole_str, topic_extraction_gpt4_topic(whole_str, spesefic_topic).split(","), spesefic_topic)                
+                ani = extract_words(top_10)
+                network = create_keyword_network( sized_down_whole_text, topic_extraction(whole_str).split("," ))
+                plot_of_network = visualize_network(network)
+                st.pyplot(plot_of_network)
+                word_cloud = generate_word_cloud_2(network,ani)
+                achieved = True
+                
+                st.pyplot(word_cloud)
+                st.write(top_10)
+                break  # If successful, break out of the loop
+            except Exception as e:
+                attempts += 1
+                if attempts == max_attempts:
+                    st.error(f"Failed to generate word cloud after {e} attempts.")
+                else:
+                    continue  # Try again if not yet reached max_attempts
+
+        st.session_state["multiple_pdfs_processed"] = True
+        st.session_state["retriever_multi_vector_img"] = retriever_multi_vector_img
+        st.session_state["chain_multimodal_rag"] = chain_multimodal_rag
+
+
+# Handle multiple PDF uploads
+st.header("Upload multiple PDF reports")
+uploaded_files = st.file_uploader("Upload multiple PDF reports here:", type=['pdf'], accept_multiple_files=True, key='multiple_pdfs')
+if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False):
+    st.success("PDF files uploaded successfully!")
+    
+    texts, tables = [], []
+    pdf_names = []
+    text_summaries_with_names = []
+    spesefic_topic = st.text_input("Enter spesefic topic if desired:")
+    if st.button("Proceed with text processing"):
+
+        for uploaded_file in uploaded_files:
+            print(uploaded_file)
+            temp_file = tempfile.NamedTemporaryFile(delete=False)
+            temp_file.write(uploaded_file.read())
+            pdf_name = uploaded_file.name
+            pdf_names.append(pdf_name)
+            st.markdown(f"Uploaded PDF file path: `{temp_file.name}`, Name: `{pdf_name}`")
+
+            input_path = os.getcwd()
+            output_path = os.path.join(os.getcwd(), "output")
+            raw_pdf_elements = extract_pdf_elements(temp_file.name, output_path, 4000, 500, 300)
+            file_texts, file_tables = categorize_elements(raw_pdf_elements)
+            texts.extend(file_texts)
+            tables.extend(file_tables)
+
+            text_splitter = CharacterTextSplitter.from_tiktoken_encoder(chunk_size=4000, chunk_overlap=0)
+            joined_texts = " ".join(file_texts)
+            texts_4k_token = text_splitter.split_text(joined_texts)
+
+            text_summaries, table_summaries = generate_text_summaries(texts_4k_token, file_tables, summarize_texts=True)
+            
+            # Prefix each text summary with the PDF name
+            text_summaries_with_names.extend([f"{pdf_name}: {summary}" for summary in text_summaries])
+
+        img_base64_list, image_summaries = generate_img_summaries("figures")
+
+        vectorstore = Chroma(
+            collection_name="mm_rag_cj_blog", embedding_function=OpenAIEmbeddings()
+        )
+
+        retriever_multi_vector_img = create_multi_vector_retriever(
+            vectorstore,
+            text_summaries_with_names,
+            texts,
+            table_summaries,
+            tables,
+            image_summaries,
+            img_base64_list,
+        )
+        chain_multimodal_rag = multi_modal_rag_chain(retriever_multi_vector_img)
+
+        whole_str = ' '.join(text_summaries_with_names)
+        #network = create_keyword_network(truncate_to_token_limit(whole_str), topic_extraction(truncate_to_token_limit(whole_str)).split(","))
+        #sorted_nodes = print_node_values_sorted(network)
+
+        max_attempts = 25
+        attempts = 0
+        achieved = False
+        with st.expander("Show Algorithm", expanded=False):
+            st.write(alg)
+        while attempts < max_attempts and not achieved:
+            try:
+                if spesefic_topic == "" :
+                    sized_down_whole_text =  truncate_to_token_limit(whole_str)
+                    keywords= topic_extraction(sized_down_whole_text).split(",")
+                    top_10 = topic_extraction_top10_gpt4(whole_str, topic_extraction(whole_str).split(","))
+                else:
+                    sized_down_whole_text =  truncate_to_token_limit(whole_str)
+                    keywords= topic_extraction(sized_down_whole_text).split(",")
+                    top_10 = topic_extraction_top10_gpt4_topic(whole_str, topic_extraction_gpt4_topic(whole_str, spesefic_topic).split(","), spesefic_topic)
+                print(2)
+                
+                ani = extract_words(top_10)
+                network = create_keyword_network( sized_down_whole_text, topic_extraction(whole_str).split("," ))
+                plot_of_network = visualize_network(network)
+                st.pyplot(plot_of_network)
+                word_cloud = generate_word_cloud_2(network,ani)
+                achieved = True
+                
+                st.pyplot(word_cloud)
+                st.write(top_10)
+                break  # If successful, break out of the loop
+            except Exception as e:
+                attempts += 1
+                if attempts == max_attempts:
+                    st.error(f"Failed to generate word cloud after {e} attempts.")
+                else:
+                    continue  # Try again if not yet reached max_attempts
+
+        st.session_state["multiple_pdfs_processed"] = True
+        st.session_state["retriever_multi_vector_img"] = retriever_multi_vector_img
+        st.session_state["chain_multimodal_rag"] = chain_multimodal_rag
+
+
+
+st.header("Enter a query to search the PDFs")
+user_input = st.text_input("Enter some text:")
+if user_input:
+    print("user called for answer9ab")
+    retriever_multi_vector_img = st.session_state.get("retriever_multi_vector_img")
+    chain_multimodal_rag = st.session_state.get("chain_multimodal_rag")
+    
+    if retriever_multi_vector_img and chain_multimodal_rag:
+        content, image = call_for_answer(user_input, retriever_multi_vector_img, chain_multimodal_rag)
+        st.write("output:", content)
+        if image:
+            base64_image = image
+            decoded_image = base64.b64decode(base64_image)
+            image = Image.open(BytesIO(decoded_image))
+            st.image(image, caption='Base64 Decoded Image')
+    else:
+        st.error("Please upload and process a PDF file first.")
