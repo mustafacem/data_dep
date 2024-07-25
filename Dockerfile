@@ -1,6 +1,7 @@
 FROM python:3.11-slim
 
 WORKDIR /app
+RUN pip install poetry
 
 RUN apt-get update && apt-get install -y \
   build-essential curl software-properties-common \
@@ -13,6 +14,13 @@ COPY pyproject.toml poetry.lock ./
 COPY insight_engine/__init__.py ./insight_engine/
 RUN poetry config virtualenvs.create false
 RUN poetry install --no-interaction --no-ansi
+
+# Install unstructured==0.14.9
+RUN pip install unstructured==0.14.9
+RUN pip install chromadb
+RUN pip install  IPython
+RUN pip install -U langchain openai chromadb langchain-experimental
+
 
 COPY . .
 
