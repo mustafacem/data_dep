@@ -9,10 +9,12 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from streamlit.delta_generator import DeltaGenerator
 from insight_engine.prompt.knowledge import COCA_COLA
+from langchain.memory import SQLiteMemory
 from insight_engine.prompt.system_prompts import (
     PRACTICE_GROUPS,
     REPORT_STRUCTURES,
     USER_QUERY,
+    alg
 )
 import tempfile
 import matplotlib.pyplot as plt
@@ -20,56 +22,16 @@ import base64
 from io import BytesIO
 from PIL import Image
 from insight_engine.pdf_extraction.pdf_extraction_c import (
-    create_multi_vector_retriever, 
     generate_img_summaries, 
-    call_for_answer, 
     extract_pdf_elements, 
     categorize_elements,
     generate_text_summaries,
     topic_extraction, 
-    create_keyword_network,
-    print_node_values_sorted, 
-    generate_word_cloud, 
-    multi_modal_rag_chain,
-    topic_extraction_top10,
-    extract_words,
-    generate_word_cloud_2,
-    visualize_network,
-    topic_extraction_top10_gpt4,
-    topic_extraction_gpt4,
-    topic_extraction_top10_gpt4_topic,
-    topic_extraction_gpt4_topic
 )
-alg = """
-1. Extracting Keywords Using AI
+from insight_engine.rag_creation.rag_creation_c import (call_for_answer, create_multi_vector_retriever, multi_modal_rag_chain) 
+from insight_engine.word_cloud.word_cloud_c import (   generate_word_cloud_2,     visualize_network,     create_keyword_network, extract_words ) 
 
-    Text Preprocessing: The text is cleaned and tokenized, removing irrelevant characters and breaking it down into individual words or phrases.
-    Keyword Extraction: An AI model (e.g., GPT-3.5) is used to analyze the text and identify distinct keywords. These keywords are extracted based on their frequency and contextual relevance.
-    Output: The result is a list of extracted keywords that are semantically significant to the text.
 
-2. Determining Keyword Importance
-
-    Contextual Analysis: Each keyword is analyzed in the context of the entire text to understand its relevance.
-    Determine top10 keywords : AI models assess and determines if it is fit be in top10 to each keyword based on their contextual importance and relevance to the main themes of the text.
-    Output: A ranked list of keywords with their respective importance scores is produced.
-
-3. Generating Keyword Network
-
-    Co-occurrence Matrix: A matrix is created to record how frequently each pair of keywords appears together in the text. This involves scanning the text and counting the occurrences of keyword pairs within a defined window of words.
-    Network Graph: A graph is generated where each keyword is a node, and the edges represent the co-occurrence frequency between pairs of keywords. The weight of each edge corresponds to the number of times the connected keywords appear together.
-    Output: A network graph visually representing the relationships between keywords is created.
-
-4. Boosting Referral Scores
-
-    Adjusting Scores: The co-occurrence scores of keywords are adjusted. 
-    Final Scores: The final scores for each keyword are calculated, which will determine their visual prominence in the word cloud.
-    Output: Keywords' final scores are boosted to reflect their importance in the text.
-
-5. Generating the Word Cloud
-
-    Font Size Calculation: The font size of each keyword in the word cloud is determined based on its final score. Keywords with higher scores appear larger and more prominent.
-    Visualization: Word cloud generation tools are used to create a visual representation of the keywords. The most important and frequently referred keywords are highlighted, ensuring they stand out.
-"""
 from transformers import GPT2Tokenizer
 # Initialize the tokenizer
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
@@ -162,7 +124,7 @@ if uploaded_file and not st.session_state.get("single_pdf_processed", False):
         joined_texts = " ".join(texts)
         texts_4k_token = text_splitter.split_text(joined_texts)
 
-        text_summaries, table_summaries = generate_text_summaries(texts_4k_token, tables, summarize_texts=True)
+        text_summaries, table_summaries = generate_text_summaries(texts_4k_token, tables, 1, summarize_texts=True)
         img_base64_list, image_summaries = generate_img_summaries("figures")
 
         vectorstore = Chroma(
@@ -196,11 +158,11 @@ if uploaded_file and not st.session_state.get("single_pdf_processed", False):
                 if spesefic_topic == "" :
                     sized_down_whole_text =  truncate_to_token_limit(whole_str)
                     keywords= topic_extraction(sized_down_whole_text).split(",")
-                    top_10 = topic_extraction_top10_gpt4(whole_str, topic_extraction(whole_str).split(","))
+                    top_10 = topic_extraction(whole_str,"gpt-4-turbo",  topic_extraction(whole_str).split(","))
                 else:
                     sized_down_whole_text =  truncate_to_token_limit(whole_str)
                     keywords= topic_extraction(sized_down_whole_text).split(",")
-                    top_10 = topic_extraction_top10_gpt4_topic(whole_str, topic_extraction_gpt4_topic(whole_str, spesefic_topic).split(","), spesefic_topic)                
+                    top_10 = topic_extraction(whole_str, "gpt-4-turbo", topic_extraction(whole_str, "gpt-4-turbo", spesefic_topic).split(","), spesefic_topic)                
                 ani = extract_words(top_10)
                 network = create_keyword_network( sized_down_whole_text, topic_extraction(whole_str).split("," ))
                 plot_of_network = visualize_network(network)
@@ -254,7 +216,7 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
             joined_texts = " ".join(file_texts)
             texts_4k_token = text_splitter.split_text(joined_texts)
 
-            text_summaries, table_summaries = generate_text_summaries(texts_4k_token, file_tables, summarize_texts=True)
+            text_summaries, table_summaries = generate_text_summaries(texts_4k_token, file_tables, 1, summarize_texts=True)
             
             # Prefix each text summary with the PDF name
             text_summaries_with_names.extend([f"{pdf_name}: {summary}" for summary in text_summaries])
@@ -290,15 +252,15 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
                 if spesefic_topic == "" :
                     sized_down_whole_text =  truncate_to_token_limit(whole_str)
                     keywords= topic_extraction(sized_down_whole_text).split(",")
-                    top_10 = topic_extraction_top10_gpt4(whole_str, topic_extraction(whole_str).split(","))
+                    top_10 =    (whole_str,"gpt-4-turbo", topic_extraction(whole_str).split(","))
                 else:
                     sized_down_whole_text =  truncate_to_token_limit(whole_str)
                     keywords= topic_extraction(sized_down_whole_text).split(",")
-                    top_10 = topic_extraction_top10_gpt4_topic(whole_str, topic_extraction_gpt4_topic(whole_str, spesefic_topic).split(","), spesefic_topic)
+                    top_10 = topic_extraction(whole_str, "gpt-4-turbo", topic_extraction(whole_str,"gpt-4-turbo", spesefic_topic).split(","), spesefic_topic)
                 print(2)
                 
                 ani = extract_words(top_10)
-                network = create_keyword_network( sized_down_whole_text, topic_extraction(whole_str).split("," ))
+                network = create_keyword_network( sized_down_whole_text, topic_extraction(whole_str,"gpt-3.5-turbo-instruct").split("," ))
                 plot_of_network = visualize_network(network)
                 st.pyplot(plot_of_network)
                 word_cloud = generate_word_cloud_2(network,ani)
