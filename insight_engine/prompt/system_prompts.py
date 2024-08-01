@@ -101,7 +101,41 @@ Highlight potential impacts and provide recommended actions based on the analysi
 Ensure reports are tailored to the needs of the management consulting processes, with a focus on strategic implications and actionable recommendations relevant to the perspective of a {audience}.
 The report must follow this structure: {report_structure}.
 """
+prompt_text = """
+You are an assistant tasked with summarizing tables and text for retrieval. \
+These summaries will be embedded and used to retrieve the raw text or table elements. \
+Give a  summary of the table or text that is well optimized for retrieval. Table or text: {element}
+"""
+alg = """
+1. Extracting Keywords Using AI
 
+    Text Preprocessing: The text is cleaned and tokenized, removing irrelevant characters and breaking it down into individual words or phrases.
+    Keyword Extraction: An AI model (e.g., GPT-3.5) is used to analyze the text and identify distinct keywords. These keywords are extracted based on their frequency and contextual relevance.
+    Output: The result is a list of extracted keywords that are semantically significant to the text.
+
+2. Determining Keyword Importance
+
+    Contextual Analysis: Each keyword is analyzed in the context of the entire text to understand its relevance.
+    Determine top10 keywords : AI models assess and determines if it is fit be in top10 to each keyword based on their contextual importance and relevance to the main themes of the text.
+    Output: A ranked list of keywords with their respective importance scores is produced.
+
+3. Generating Keyword Network
+
+    Co-occurrence Matrix: A matrix is created to record how frequently each pair of keywords appears together in the text. This involves scanning the text and counting the occurrences of keyword pairs within a defined window of words.
+    Network Graph: A graph is generated where each keyword is a node, and the edges represent the co-occurrence frequency between pairs of keywords. The weight of each edge corresponds to the number of times the connected keywords appear together.
+    Output: A network graph visually representing the relationships between keywords is created.
+
+4. Boosting Referral Scores
+
+    Adjusting Scores: The co-occurrence scores of keywords are adjusted. 
+    Final Scores: The final scores for each keyword are calculated, which will determine their visual prominence in the word cloud.
+    Output: Keywords' final scores are boosted to reflect their importance in the text.
+
+5. Generating the Word Cloud
+
+    Font Size Calculation: The font size of each keyword in the word cloud is determined based on its final score. Keywords with higher scores appear larger and more prominent.
+    Visualization: Word cloud generation tools are used to create a visual representation of the keywords. The most important and frequently referred keywords are highlighted, ensuring they stand out.
+"""
 # report structures
 SWOT = """
 A SWOT analysis is a strategic planning tool that evaluates a company's internal and external environments by identifying its Strengths, Weaknesses, Opportunities, and Threats. Strengths and weaknesses are internal factors, such as resources, capabilities, and processes, where the company excels or needs improvement. Opportunities and threats are external factors, including market trends, economic conditions, and competitive pressures that could impact the company's success. By systematically analyzing these four aspects, a SWOT analysis helps businesses leverage their strengths, address weaknesses, capitalize on opportunities, and mitigate potential threats, thus informing strategic decision-making and planning."""

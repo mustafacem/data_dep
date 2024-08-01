@@ -21,15 +21,15 @@ import matplotlib.pyplot as plt
 import base64
 from io import BytesIO
 from PIL import Image
-from insight_engine.pdf_extraction.pdf_extraction_c import (
+from insight_engine.pdf_extraction.pdf_extraction import (
     generate_img_summaries, 
     extract_pdf_elements, 
     categorize_elements,
     generate_text_summaries,
     topic_extraction, 
 )
-from insight_engine.rag_creation.rag_creation_c import (call_for_answer, create_multi_vector_retriever, multi_modal_rag_chain) 
-from insight_engine.word_cloud.word_cloud_c import (   generate_word_cloud_2,     visualize_network,     create_keyword_network, extract_words ) 
+from insight_engine.rag_creation.rag_creation import (call_for_answer, create_multi_vector_retriever, multi_modal_rag_chain) 
+from insight_engine.word_cloud.word_cloud import (   generate_word_cloud_2,     visualize_network,     create_keyword_network, extract_words ) 
 
 
 from transformers import GPT2Tokenizer

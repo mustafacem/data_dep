@@ -107,6 +107,7 @@ def create_multi_vector_retriever(vectorstore, text_summaries, texts, table_summ
     """
 
     store = InMemoryStore()
+
     id_key = "doc_id"
 
     retriever = MultiVectorRetriever(
@@ -154,3 +155,22 @@ def multi_modal_rag_chain(retriever):
     )
 
     return chain
+
+def call_for_answer(query, retriever_multi_vector_img, chain_multimodal_rag):
+    docs = retriever_multi_vector_img.get_relevant_documents(query, limit=7)
+    img  = ""
+    con =  ""
+    for x in docs:
+        if " " in str(x):
+            pass
+        else:
+            if img ==  "":
+                img = x
+    
+    con = chain_multimodal_rag.invoke(query )
+    if img == "":
+        print("No image found")
+    if con == "":
+        print("No content found")
+
+    return con, img
