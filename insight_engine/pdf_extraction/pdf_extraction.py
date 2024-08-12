@@ -33,7 +33,7 @@ import IPython
 from IPython.display import HTML, display
 from io import BytesIO
 from PIL import Image
-from insight_engine.prompt.system_prompts import prompt_text
+from insight_engine.prompt.system_prompts import PROMPT_TEXT
 from insight_engine.models.models import model_for_summerization
 
 
@@ -80,7 +80,7 @@ def generate_text_summaries(texts, tables, max_concurrency , summarize_texts=Fal
     tables: List of str
     summarize_texts: Bool to summarize texts
     """
-    prompt = ChatPromptTemplate.from_template(prompt_text)
+    prompt = ChatPromptTemplate.from_template(PROMPT_TEXT)
 
     
 

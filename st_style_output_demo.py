@@ -14,7 +14,7 @@ from insight_engine.prompt.system_prompts import (
     PRACTICE_GROUPS,
     REPORT_STRUCTURES,
     USER_QUERY,
-    alg
+    ALG
 )
 import tempfile
 import matplotlib.pyplot as plt
@@ -152,7 +152,7 @@ if uploaded_file and not st.session_state.get("single_pdf_processed", False):
         attempts = 0
         achieved = False
         with st.expander("Show Algorithm", expanded=False):
-            st.write(alg)
+            st.write(ALG)
         while attempts < max_attempts and not achieved:
             try:
                 if spesefic_topic == "" :
@@ -246,7 +246,7 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
         attempts = 0
         achieved = False
         with st.expander("Show Algorithm", expanded=False):
-            st.write(alg)
+            st.write(ALG)
         while attempts < max_attempts and not achieved:
             try:
                 if spesefic_topic == "" :

@@ -101,12 +101,12 @@ Highlight potential impacts and provide recommended actions based on the analysi
 Ensure reports are tailored to the needs of the management consulting processes, with a focus on strategic implications and actionable recommendations relevant to the perspective of a {audience}.
 The report must follow this structure: {report_structure}.
 """
-prompt_text = """
+PROMPT_TEXT = """
 You are an assistant tasked with summarizing tables and text for retrieval. \
 These summaries will be embedded and used to retrieve the raw text or table elements. \
 Give a  summary of the table or text that is well optimized for retrieval. Table or text: {element}
 """
-alg = """
+ALG = """
 1. Extracting Keywords Using AI
 
     Text Preprocessing: The text is cleaned and tokenized, removing irrelevant characters and breaking it down into individual words or phrases.

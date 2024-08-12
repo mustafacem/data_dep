@@ -5,12 +5,25 @@ description = ""
 authors = ["Adam Osusky <adam.osusky02@gmail.com>"]
 readme = "README.md"
 
+
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.13"
 streamlit = "^1.36.0"
 langchain = "^0.2.6"
 langchain-openai = "^0.1.13"
 python-dotenv = "^1.0.1"
+unstructured = "0.14.9"
+chromadb = "^0.3.22"
+IPython = "^8.13.1"
+pytesseract = "^0.3.10"
+pdf2image = "^1.16.3"
+pymupdf = "^1.21.1"
+networkx = "^3.0"
+wordcloud = "^1.9.1.1"
+matplotlib = "^3.7.1"
+transformers = "^4.44.0"
+langchain-community = "^0.2.11"
+pdfminer = "^20191010"
 
 
 [build-system]
