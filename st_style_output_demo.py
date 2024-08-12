@@ -31,10 +31,11 @@ from insight_engine.pdf_extraction.pdf_extraction import (
 from insight_engine.rag_creation.rag_creation import (call_for_answer, create_multi_vector_retriever, multi_modal_rag_chain) 
 from insight_engine.word_cloud.word_cloud import (   generate_word_cloud_2,     visualize_network,     create_keyword_network, extract_words ) 
 
-
 from transformers import GPT2Tokenizer
 # Initialize the tokenizer
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+
+poppler_path= r"C:\Users\cem\Desktop\pooppker\poppler-24.02.0\Library\bin"
 
 def truncate_to_token_limit(text, token_limit=3998 ):
     # Tokenize the text
@@ -57,6 +58,7 @@ load_dotenv(dotenv_path)
 openai_api = os.getenv("OPENAI_API_KEY")
 if openai_api is None:
     raise ValueError("OpenAI key not specified!")
+openai_api = 'sk-proj-rHddHmt0SxNlqOiiSL4VT3BlbkFJMiBrmdx7qmPvk6qqPhxN'                  
 
 # Streamlit UI elements
 st.title("Insight Report Generator")

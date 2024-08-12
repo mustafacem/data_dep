@@ -4,7 +4,7 @@ import re
 import uuid
 from PIL import Image
 from collections import defaultdict
-
+import openai
 from langchain_core.documents import Document
 from langchain_core.messages import HumanMessage
 from langchain_core.output_parsers import StrOutputParser
@@ -12,6 +12,14 @@ from langchain.retrievers.multi_vector import MultiVectorRetriever
 from langchain.storage import InMemoryStore
 from langchain_openai import ChatOpenAI
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain.storage import LocalFileStore
+
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from openai import OpenAI
+
+
+
 
 
 def looks_like_base64(sb):
@@ -106,7 +114,7 @@ def create_multi_vector_retriever(vectorstore, text_summaries, texts, table_summ
     Create retriever that indexes summaries, but returns raw images or texts
     """
 
-    store = InMemoryStore()
+    store =  LocalFileStore("insight_engine/rag_creation/data_depo")#("insight_engine\rag_creation\data_depo")
 
     id_key = "doc_id"
 
@@ -115,7 +123,6 @@ def create_multi_vector_retriever(vectorstore, text_summaries, texts, table_summ
         docstore=store,
         id_key=id_key,
     )
-
     def add_documents(retriever, doc_summaries, doc_contents):
         doc_ids = [str(uuid.uuid4()) for _ in doc_contents]
         summary_docs = [
@@ -123,7 +130,13 @@ def create_multi_vector_retriever(vectorstore, text_summaries, texts, table_summ
             for i, s in enumerate(doc_summaries)
         ]
         retriever.vectorstore.add_documents(summary_docs)
-        retriever.docstore.mset(list(zip(doc_ids, doc_contents)))
+        
+        # Convert content to bytes if it's a string before saving to the store
+        byte_content = [
+            content.encode('utf-8') if isinstance(content, str) else content
+            for content in doc_contents
+        ]
+        retriever.docstore.mset(list(zip(doc_ids, byte_content)))
 
     if text_summaries:
         add_documents(retriever, text_summaries, texts)

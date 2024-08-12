@@ -83,7 +83,7 @@ def generate_text_summaries(texts, tables, max_concurrency , summarize_texts=Fal
 
     
 
-    summarize_chain = {"element": lambda x: x} | prompt | model_for_summerization | StrOutputParser()
+    summarize_chain = {"element": lambda x: x} | prompt | ChatOpenAI(model_for_summerization) | StrOutputParser() 
 
     text_summaries = []
     table_summaries = []
