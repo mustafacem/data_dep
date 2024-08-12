@@ -6,6 +6,7 @@ import re
 from openai import OpenAI
 
 import os 
+
 from unstructured.partition.pdf import partition_pdf
 import base64
 from langchain_core.prompts import ChatPromptTemplate
@@ -18,8 +19,7 @@ from langchain.retrievers.multi_vector import MultiVectorRetriever
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 
-
-import uuid
+from pdfminer.utils import open_filename
 import fitz
 import pymupdf
 import pytesseract

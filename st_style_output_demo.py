@@ -9,7 +9,6 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from streamlit.delta_generator import DeltaGenerator
 from insight_engine.prompt.knowledge import COCA_COLA
-from langchain.memory import SQLiteMemory
 from insight_engine.prompt.system_prompts import (
     PRACTICE_GROUPS,
     REPORT_STRUCTURES,
@@ -19,6 +18,7 @@ from insight_engine.prompt.system_prompts import (
 import tempfile
 import matplotlib.pyplot as plt
 import base64
+import pdfminer.utils
 from io import BytesIO
 from PIL import Image
 from insight_engine.pdf_extraction.pdf_extraction import (
