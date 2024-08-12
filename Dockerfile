@@ -16,10 +16,7 @@ RUN poetry config virtualenvs.create false
 RUN poetry install --no-interaction --no-ansi
 
 # Install unstructured==0.14.9
-RUN pip install unstructured==0.14.9
-RUN pip install chromadb
-RUN pip install  IPython
-RUN pip install -U langchain openai chromadb langchain-experimental
+
 
 
 COPY . .

@@ -6,7 +6,6 @@ import re
 from openai import OpenAI
 
 import os 
-from pdfminer.utils import open_filename
 from unstructured.partition.pdf import partition_pdf
 import base64
 from langchain_core.prompts import ChatPromptTemplate
@@ -33,11 +32,11 @@ import IPython
 from IPython.display import HTML, display
 from io import BytesIO
 from PIL import Image
+
 from insight_engine.prompt.system_prompts import PROMPT_TEXT
 from insight_engine.models.models import model_for_summerization
 
 
-#pytesseract.pytesseract.tesseract_cmd = r'insight_engine\ocrTesseract-OCR\tesseract.exe'
 
 
 def extract_pdf_elements(path,output_path,max_characters,new_after_n_chars,combine_text_under_n_chars):
@@ -73,7 +72,7 @@ def categorize_elements(raw_pdf_elements):
             texts.append(str(element))
     return texts, tables
 
-def generate_text_summaries(texts, tables, max_concurrency , summarize_texts=False):
+def generate_text_summaries(texts, tables, max_concurrency , summarize_texts=False): 
     """
     Summarize text elements
     texts: List of str
@@ -88,7 +87,7 @@ def generate_text_summaries(texts, tables, max_concurrency , summarize_texts=Fal
 
     text_summaries = []
     table_summaries = []
-
+    # Be aware increasing of max concurrency can resault in failure also amount of credits spent decreases that probbility 
     if texts and summarize_texts:
         text_summaries = summarize_chain.batch(texts, {"max_concurrency": max_concurrency})
     elif texts:
