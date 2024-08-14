@@ -16,9 +16,10 @@ services:
       - IS_PERSISTENT=TRUE
       - ALLOW_RESET=TRUE
     volumes:
-      - mounted_data:/chroma/chroma
+      - chromadb_data:/chroma/chroma
     networks:
       - default
 
 volumes:
   mounted_data:
+  chromadb_data:
