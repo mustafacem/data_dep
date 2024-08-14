@@ -21,6 +21,9 @@ RAG
 
 ## Usage
 
+### ENV variables
+To configure the application, you'll need to set up several environment variables. You can find a template of the required variables in the `.env.example` file. The code is looking for this vars in `.env`.
+
 ## Development guidelines
 
 ### Pre-commit tool
