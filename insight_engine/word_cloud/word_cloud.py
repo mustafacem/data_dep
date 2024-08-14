@@ -22,10 +22,33 @@ def visualize_network(G):
     plt.title('Keyword Network')
     return plt 
 
+def clean_and_split(input_text):
+    # Join the list into a single string if it's a list
+    if isinstance(input_text, list):
+        input_text = "\n".join(input_text)
+    
+    # Remove numbers and periods followed by whitespace or newlines
+    cleaned_text = re.sub(r'\d+\.\s*', '', input_text)
+    
+    # Split the text by newlines while preserving groups of words
+    split_items = cleaned_text.splitlines()
+    
+    # Filter out any empty strings that may result from splitting
+    cleaned_list = [item.strip() for item in split_items if item.strip()]
+    
+    return cleaned_list
+
 def create_keyword_network(text, keywords):
     # Initialize a graph
+    print("key : ")
+    print(keywords)
     G = nx.Graph()
-    
+    keywords = clean_and_split(keywords)
+    if keywords[0] == "1":
+        keywords.remove("1")
+    print("key : ")
+    print(keywords)
+    print("text : " + text )
     # Split text into sentences
     sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
     
@@ -41,6 +64,9 @@ def create_keyword_network(text, keywords):
                         connections[(keyword1, keyword2)] += 1
     
     # Add nodes (keywords) to the graph
+
+    print("////////////")
+    print(connections)
     G.add_nodes_from(keywords)
     
     # Add edges with weights (connection strengths)

@@ -37,6 +37,15 @@ from insight_engine.prompt.system_prompts import PROMPT_TEXT
 from insight_engine.models.models import model_for_summerization
 
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+openai_api = os.getenv("OPENAI_API_KEY")
+client = OpenAI(
+    api_key= openai_api
+)
 
 
 def extract_pdf_elements(path,output_path,max_characters,new_after_n_chars,combine_text_under_n_chars):
@@ -81,9 +90,12 @@ def generate_text_summaries(texts, tables, max_concurrency , summarize_texts=Fal
     """
     prompt = ChatPromptTemplate.from_template(PROMPT_TEXT)
 
-    
+    model = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
 
-    summarize_chain = {"element": lambda x: x} | prompt | ChatOpenAI(model_for_summerization) | StrOutputParser() 
+    summarize_chain = {"element": lambda x: x} | prompt | model | StrOutputParser()
+
+
+    #summarize_chain = {"element": lambda x: x} | prompt | ChatOpenAI() | StrOutputParser() # 
 
     text_summaries = []
     table_summaries = []
@@ -212,13 +224,6 @@ def generate_img_summaries_rule(pdf_path, images_dir='extracted_images_main_0'):
 
 
 
-from dotenv import load_dotenv
-dotenv_path = 'op.env'
-load_dotenv(dotenv_path)
-client = OpenAI(
-    api_key= os.getenv("OPENAI_API_KEY")
-)
-
 def topic_extraction(text_to_analyze, model, word_list =[], topic = ""):
   if model == "gpt-3.5-turbo-instruct":
     if topic == "":
@@ -234,6 +239,13 @@ def topic_extraction(text_to_analyze, model, word_list =[], topic = ""):
         completion = client.completions.create(
         model = "gpt-3.5-turbo-instruct",
         prompt = f"choose top 10  keywords from {word_list} most relevant to text :  {text_to_analyze}   \n\n Then itemeze and explain why they are important :",
+        max_tokens = 600,
+        temperature = 0)
+        return completion.choices[0].text.strip()
+    elif topic == "purefaction":
+        completion = client.completions.create(
+        model = "gpt-3.5-turbo-instruct",
+        prompt = f"you are given list of keywords from  given text : {text_to_analyze} return just keywords   \n\n keywords:",
         max_tokens = 600,
         temperature = 0)
         return completion.choices[0].text.strip()

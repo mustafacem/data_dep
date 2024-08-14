@@ -18,7 +18,8 @@ from insight_engine.prompt.system_prompts import (
 import tempfile
 import matplotlib.pyplot as plt
 import base64
-import pdfminer.utils
+import fitz
+#import pdfminer.utils
 from io import BytesIO
 from PIL import Image
 from insight_engine.pdf_extraction.pdf_extraction import (
@@ -31,11 +32,18 @@ from insight_engine.pdf_extraction.pdf_extraction import (
 from insight_engine.rag_creation.rag_creation import (call_for_answer, create_multi_vector_retriever, multi_modal_rag_chain) 
 from insight_engine.word_cloud.word_cloud import (   generate_word_cloud_2,     visualize_network,     create_keyword_network, extract_words ) 
 
+
+from nltk.tokenize import sent_tokenize
+from nltk.tokenize.punkt import PunktSentenceTokenizer
+
+import nltk
+#nltk.download('all')# if punkt tokenizer cant  be found enable this code or any other nltk related error  
+
+
 from transformers import GPT2Tokenizer
 # Initialize the tokenizer
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 
-poppler_path= r"C:\Users\cem\Desktop\pooppker\poppler-24.02.0\Library\bin"
 
 def truncate_to_token_limit(text, token_limit=3998 ):
     # Tokenize the text
@@ -51,14 +59,14 @@ def truncate_to_token_limit(text, token_limit=3998 ):
     return truncated_text
 
 
-# Load environment variables
+from dotenv import load_dotenv
+
+
 load_dotenv()
-dotenv_path = 'op.env'
-load_dotenv(dotenv_path)
+
 openai_api = os.getenv("OPENAI_API_KEY")
 if openai_api is None:
     raise ValueError("OpenAI key not specified!")
-openai_api = 'sk-proj-rHddHmt0SxNlqOiiSL4VT3BlbkFJMiBrmdx7qmPvk6qqPhxN'                  
 
 # Streamlit UI elements
 st.title("Insight Report Generator")
@@ -150,7 +158,7 @@ if uploaded_file and not st.session_state.get("single_pdf_processed", False):
         whole_str = ' '.join(text_summaries)
         #network = network = create_keyword_network(truncate_to_token_limit(whole_str), topic_extraction(truncate_to_token_limit(whole_str)).split(","))
         #sorted_nodes = print_node_values_sorted(network)
-        max_attempts = 25
+        max_attempts = 1
         attempts = 0
         achieved = False
         with st.expander("Show Algorithm", expanded=False):
@@ -159,14 +167,18 @@ if uploaded_file and not st.session_state.get("single_pdf_processed", False):
             try:
                 if spesefic_topic == "" :
                     sized_down_whole_text =  truncate_to_token_limit(whole_str)
-                    keywords= topic_extraction(sized_down_whole_text).split(",")
-                    top_10 = topic_extraction(whole_str,"gpt-4-turbo",  topic_extraction(whole_str).split(","))
+                    keywords= topic_extraction(sized_down_whole_text ,"gpt-4-turbo" ).split(",")
+                    top_10 = topic_extraction(whole_str,"gpt-4-turbo",  topic_extraction(whole_str,"gpt-4-turbo").split(","))
                 else:
                     sized_down_whole_text =  truncate_to_token_limit(whole_str)
-                    keywords= topic_extraction(sized_down_whole_text).split(",")
+                    keywords= topic_extraction(sized_down_whole_text,"gpt-4-turbo").split(",")
                     top_10 = topic_extraction(whole_str, "gpt-4-turbo", topic_extraction(whole_str, "gpt-4-turbo", spesefic_topic).split(","), spesefic_topic)                
-                ani = extract_words(top_10)
-                network = create_keyword_network( sized_down_whole_text, topic_extraction(whole_str).split("," ))
+                ani = topic_extraction(whole_str,"gpt-3.5-turbo-instruct", keywords) 
+                ani = extract_words(topic_extraction(ani, "gpt-3.5-turbo-instruct", [],"purefaction"))
+
+
+
+                network =  create_keyword_network( sized_down_whole_text,keywords ) # create_keyword_network( sized_down_whole_text, topic_extraction(whole_str ,"gpt-4-turbo" ).split("," ))
                 plot_of_network = visualize_network(network)
                 st.pyplot(plot_of_network)
                 word_cloud = generate_word_cloud_2(network,ani)
@@ -178,7 +190,7 @@ if uploaded_file and not st.session_state.get("single_pdf_processed", False):
             except Exception as e:
                 attempts += 1
                 if attempts == max_attempts:
-                    st.error(f"Failed to generate word cloud after {e} attempts.")
+                    st.error(f"Failed to generate word cloud  {e} ")
                 else:
                     continue  # Try again if not yet reached max_attempts
 
@@ -244,7 +256,7 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
         #network = create_keyword_network(truncate_to_token_limit(whole_str), topic_extraction(truncate_to_token_limit(whole_str)).split(","))
         #sorted_nodes = print_node_values_sorted(network)
 
-        max_attempts = 25
+        max_attempts = 1
         attempts = 0
         achieved = False
         with st.expander("Show Algorithm", expanded=False):
@@ -252,17 +264,21 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
         while attempts < max_attempts and not achieved:
             try:
                 if spesefic_topic == "" :
-                    sized_down_whole_text =  truncate_to_token_limit(whole_str)
-                    keywords= topic_extraction(sized_down_whole_text).split(",")
-                    top_10 =    (whole_str,"gpt-4-turbo", topic_extraction(whole_str).split(","))
+                    sized_down_whole_text =  truncate_to_token_limit(whole_str)#gpt-3.5-turbo-instruct
+                    keywords= topic_extraction(sized_down_whole_text,"gpt-4-turbo").split(",")
+                    top_10 =  topic_extraction(whole_str,"gpt-4-turbo", keywords )
                 else:
                     sized_down_whole_text =  truncate_to_token_limit(whole_str)
-                    keywords= topic_extraction(sized_down_whole_text).split(",")
+                    keywords= topic_extraction(sized_down_whole_text, "gpt-4-turbo").split(",")
                     top_10 = topic_extraction(whole_str, "gpt-4-turbo", topic_extraction(whole_str,"gpt-4-turbo", spesefic_topic).split(","), spesefic_topic)
-                print(2)
                 
-                ani = extract_words(top_10)
-                network = create_keyword_network( sized_down_whole_text, topic_extraction(whole_str,"gpt-3.5-turbo-instruct").split("," ))
+
+                ani = topic_extraction(whole_str,"gpt-3.5-turbo-instruct", keywords) 
+                ani = extract_words(topic_extraction(ani, "gpt-3.5-turbo-instruct", [],"purefaction"))
+
+
+
+                network =  create_keyword_network( sized_down_whole_text,keywords ) # create_keyword_network( sized_down_whole_text, topic_extraction(whole_str ,"gpt-4-turbo" ).split("," ))
                 plot_of_network = visualize_network(network)
                 st.pyplot(plot_of_network)
                 word_cloud = generate_word_cloud_2(network,ani)
@@ -270,11 +286,11 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
                 
                 st.pyplot(word_cloud)
                 st.write(top_10)
-                break  # If successful, break out of the loop
+                break  # If successful,
             except Exception as e:
                 attempts += 1
                 if attempts == max_attempts:
-                    st.error(f"Failed to generate word cloud after {e} attempts.")
+                    st.error(f"{e} ")
                 else:
                     continue  # Try again if not yet reached max_attempts
 
@@ -287,7 +303,6 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
 st.header("Enter a query to search the PDFs")
 user_input = st.text_input("Enter some text:")
 if user_input:
-    print("user called for answer9ab")
     retriever_multi_vector_img = st.session_state.get("retriever_multi_vector_img")
     chain_multimodal_rag = st.session_state.get("chain_multimodal_rag")
     
