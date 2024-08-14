@@ -1,10 +1,24 @@
 services:
-  researchdroid:
+  insight_engine:
     image: "knowdroids:5000/insight_engine"
     build:
       dockerfile: Dockerfile
     volumes:
       - mounted_data:/app/mounted_data
+    networks:
+      - default
+
+  chromadb:
+    image: "chromadb/chroma:0.4.22"
+    command: uvicorn chromadb.app:app --workers 4 --host 0.0.0.0 --port 8000
+    restart: always
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ALLOW_RESET=TRUE
+    volumes:
+      - mounted_data:/chroma/chroma
+    networks:
+      - default
 
 volumes:
   mounted_data:

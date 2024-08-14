@@ -11,7 +11,13 @@ streamlit = "^1.36.0"
 langchain = "^0.2.6"
 langchain-openai = "^0.1.13"
 python-dotenv = "^1.0.1"
+chromadb = "0.5.0"
+langchain-chroma = "^0.1.2"
 
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+pytest = "^8.3.2"
 
 [build-system]
 requires = ["poetry-core"]
