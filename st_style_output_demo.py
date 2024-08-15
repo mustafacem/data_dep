@@ -158,6 +158,7 @@ if uploaded_file and not st.session_state.get("single_pdf_processed", False):
         whole_str = ' '.join(text_summaries)
         #network = network = create_keyword_network(truncate_to_token_limit(whole_str), topic_extraction(truncate_to_token_limit(whole_str)).split(","))
         #sorted_nodes = print_node_values_sorted(network)
+        
         max_attempts = 1
         attempts = 0
         achieved = False
@@ -199,7 +200,6 @@ if uploaded_file and not st.session_state.get("single_pdf_processed", False):
         st.session_state["chain_multimodal_rag"] = chain_multimodal_rag
 
 
-# Handle multiple PDF uploads
 st.header("Upload multiple PDF reports")
 uploaded_files = st.file_uploader("Upload multiple PDF reports here:", type=['pdf'], accept_multiple_files=True, key='multiple_pdfs')
 if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False):
@@ -217,7 +217,7 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
             temp_file.write(uploaded_file.read())
             pdf_name = uploaded_file.name
             pdf_names.append(pdf_name)
-            st.markdown(f"Uploaded PDF file path: `{temp_file.name}`, Name: `{pdf_name}`")
+            st.markdown(f"Uploaded PDF file path: {temp_file.name}, Name: {pdf_name}")
 
             input_path = os.getcwd()
             output_path = os.path.join(os.getcwd(), "output")
@@ -297,6 +297,7 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
         st.session_state["multiple_pdfs_processed"] = True
         st.session_state["retriever_multi_vector_img"] = retriever_multi_vector_img
         st.session_state["chain_multimodal_rag"] = chain_multimodal_rag
+# even if ı upload multiple pdfs ı want to set limit to accesses of pdfs for every pdf uploaded add a box  with name of that pdf if it is not clicked rag shouldnt accesses that info
 
 
 

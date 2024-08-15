@@ -18,14 +18,10 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from openai import OpenAI
 
-
-
-
-
 def looks_like_base64(sb):
-    """Check if the string looks like base64"""
-    return re.match("^[A-Za-z0-9+/]+[=]{0,2}$", sb) is not None
-
+    if isinstance(sb, bytes):
+        sb = sb.decode('utf-8')  # Decode bytes to string
+    return re.match(r"^[A-Za-z0-9+/]+[=]{0,2}$", sb) is not None
 
 def resize_base64_image(base64_string, size=(128, 128)):
     """
@@ -83,7 +79,10 @@ def img_prompt_func(data_dict):
     """
     Join the context into a single string
     """
-    formatted_texts = "\n".join(data_dict["context"]["texts"])
+    #formatted_texts = "\n".join(data_dict["context"]["texts"])
+    formatted_texts = "\n".join(
+    text.decode('utf-8') if isinstance(text, bytes) else str(text)
+    for text in data_dict["context"]["texts"])
     messages = []
 
     if data_dict["context"]["images"]:
@@ -175,7 +174,7 @@ def call_for_answer(query, retriever_multi_vector_img, chain_multimodal_rag):
     con =  ""
     for x in docs:
         if " " in str(x):
-            pass
+            pass # this section is for llms that run locally 
         else:
             if img ==  "":
                 img = x
