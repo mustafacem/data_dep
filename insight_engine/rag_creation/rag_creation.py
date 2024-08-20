@@ -153,7 +153,7 @@ def multi_modal_rag_chain(retriever):
     """
 
     # Multi-modal LLM
-    model = ChatOpenAI(temperature=0, model="gpt-4-vision-preview", max_tokens=1024)
+    model = ChatOpenAI(temperature=0, model="gpt-4o", max_tokens=1024)
 
     # RAG pipeline
     chain = (

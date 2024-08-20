@@ -23,13 +23,11 @@ import fitz
 from io import BytesIO
 from PIL import Image
 from insight_engine.pdf_extraction.pdf_extraction import (
-    generate_img_summaries, 
-    extract_pdf_elements, 
-    categorize_elements,
-    generate_text_summaries,
     topic_extraction, 
 )
-from insight_engine.rag_creation.rag_creation import (call_for_answer, create_multi_vector_retriever, multi_modal_rag_chain) 
+
+from insight_engine.vector_db_building.vector_db_building import (build_the_db, build_the_db_multi, truncate_to_token_limit)
+from insight_engine.rag_creation.rag_creation import (call_for_answer) 
 from insight_engine.word_cloud.word_cloud import (   generate_word_cloud_2,     visualize_network,     create_keyword_network, extract_words ) 
 
 
@@ -38,27 +36,6 @@ from nltk.tokenize.punkt import PunktSentenceTokenizer
 
 import nltk
 #nltk.download('all')# if punkt tokenizer cant  be found enable this code or any other nltk related error  
-
-
-from transformers import GPT2Tokenizer
-# Initialize the tokenizer
-tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-
-
-def truncate_to_token_limit(text, token_limit=3998 ):
-    # Tokenize the text
-    tokens = tokenizer.encode(text)
-    
-    # Truncate the tokens if they exceed the limit
-    if len(tokens) > token_limit:
-        tokens = tokens[:token_limit]
-    
-    # Decode the tokens back to text
-    truncated_text = tokenizer.decode(tokens)
-    
-    return truncated_text
-
-
 from dotenv import load_dotenv
 
 
@@ -125,43 +102,19 @@ if uploaded_file and not st.session_state.get("single_pdf_processed", False):
         temp_file.write(uploaded_file.read())
         st.markdown(f"Uploaded PDF file path: `{temp_file.name}`")
 
+        path_of_pdf = temp_file.name
         input_path = os.getcwd()
         output_path = os.path.join(os.getcwd(), "output")
-        raw_pdf_elements = extract_pdf_elements(temp_file.name, output_path, 4000, 500, 300)
-        texts, tables = categorize_elements(raw_pdf_elements)
 
-        text_splitter = CharacterTextSplitter.from_tiktoken_encoder(chunk_size=4000, chunk_overlap=0)
-        joined_texts = " ".join(texts)
-        texts_4k_token = text_splitter.split_text(joined_texts)
 
-        text_summaries, table_summaries = generate_text_summaries(texts_4k_token, tables, 1, summarize_texts=True)
-        img_base64_list, image_summaries = generate_img_summaries("figures")
+        retriever_multi_vector_img , chain_multimodal_rag, whole_str = build_the_db(path_of_pdf, input_path , output_path)
 
-        vectorstore = Chroma(
-            collection_name="mm_rag_cj_blog", embedding_function=OpenAIEmbeddings()
-        )
 
-        retriever_multi_vector_img = create_multi_vector_retriever(
-            vectorstore,
-            text_summaries,
-            texts,
-            table_summaries,
-            tables,
-            image_summaries,
-            img_base64_list,
-        )
-        chain_multimodal_rag = multi_modal_rag_chain(retriever_multi_vector_img)
-
-        query = "Line graph displaying a fluctuating trend over fiscal years from 2004 to 2022"
-        docs = retriever_multi_vector_img.get_relevant_documents(query, limit=6)
-
-        whole_str = ' '.join(text_summaries)
-        #network = network = create_keyword_network(truncate_to_token_limit(whole_str), topic_extraction(truncate_to_token_limit(whole_str)).split(","))
-        #sorted_nodes = print_node_values_sorted(network)
-        
         max_attempts = 1
         attempts = 0
         achieved = False
+
+
         with st.expander("Show Algorithm", expanded=False):
             st.write(ALG)
         while attempts < max_attempts and not achieved:
@@ -210,51 +163,12 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
     text_summaries_with_names = []
     spesefic_topic = st.text_input("Enter spesefic topic if desired:")
     if st.button("Proceed with text processing"):
+        
+        input_path = os.getcwd()
+        output_path = os.path.join(os.getcwd(), "output")
 
-        for uploaded_file in uploaded_files:
-            print(uploaded_file)
-            temp_file = tempfile.NamedTemporaryFile(delete=False)
-            temp_file.write(uploaded_file.read())
-            pdf_name = uploaded_file.name
-            pdf_names.append(pdf_name)
-            st.markdown(f"Uploaded PDF file path: {temp_file.name}, Name: {pdf_name}")
+        retriever_multi_vector_img , chain_multimodal_rag, whole_str = build_the_db_multi(uploaded_files, input_path , output_path)
 
-            input_path = os.getcwd()
-            output_path = os.path.join(os.getcwd(), "output")
-            raw_pdf_elements = extract_pdf_elements(temp_file.name, output_path, 4000, 500, 300)
-            file_texts, file_tables = categorize_elements(raw_pdf_elements)
-            texts.extend(file_texts)
-            tables.extend(file_tables)
-
-            text_splitter = CharacterTextSplitter.from_tiktoken_encoder(chunk_size=4000, chunk_overlap=0)
-            joined_texts = " ".join(file_texts)
-            texts_4k_token = text_splitter.split_text(joined_texts)
-
-            text_summaries, table_summaries = generate_text_summaries(texts_4k_token, file_tables, 1, summarize_texts=True)
-            
-            # Prefix each text summary with the PDF name
-            text_summaries_with_names.extend([f"{pdf_name}: {summary}" for summary in text_summaries])
-
-        img_base64_list, image_summaries = generate_img_summaries("figures")
-
-        vectorstore = Chroma(
-            collection_name="mm_rag_cj_blog", embedding_function=OpenAIEmbeddings()
-        )
-
-        retriever_multi_vector_img = create_multi_vector_retriever(
-            vectorstore,
-            text_summaries_with_names,
-            texts,
-            table_summaries,
-            tables,
-            image_summaries,
-            img_base64_list,
-        )
-        chain_multimodal_rag = multi_modal_rag_chain(retriever_multi_vector_img)
-
-        whole_str = ' '.join(text_summaries_with_names)
-        #network = create_keyword_network(truncate_to_token_limit(whole_str), topic_extraction(truncate_to_token_limit(whole_str)).split(","))
-        #sorted_nodes = print_node_values_sorted(network)
 
         max_attempts = 1
         attempts = 0

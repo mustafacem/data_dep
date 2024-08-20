@@ -121,7 +121,7 @@ def encode_image(image_path):
 
 def image_summarize(img_base64, prompt):
     """Make image summary"""
-    chat = ChatOpenAI(model="gpt-4-vision-preview", max_tokens=1024)
+    chat = ChatOpenAI(model="gpt-4o", max_tokens=1024)
 
     msg = chat.invoke(
         [
