@@ -95,7 +95,7 @@ def process_context_request(req: PromptRequest) -> AgentState:
 
     history = InMemoryChatMessageHistory()
     messages = [m for m in req.current_context if m.msq_type == "message"]
-    for i, message in enumerate(messages[:-1]):
+    for i, message in enumerate(messages):
         if i % 2 == 1:
             history.add_user_message(message.message)
         else:
