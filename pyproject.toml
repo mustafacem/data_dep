@@ -37,6 +37,7 @@ fastapi = "^0.112.1"
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
 pytest = "^8.3.2"
+pytest-asyncio = "^0.24.0"
 
 [build-system]
 requires = ["poetry-core"]
