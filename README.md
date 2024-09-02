@@ -24,6 +24,8 @@ RAG
 ### ENV variables
 To configure the application, you'll need to set up several environment variables. You can find a template of the required variables in the `.env.example` file. The code is looking for this vars in `.env`.
 
+- `DB_COLLECTION`: name of the vector db collection the Agents will use
+
 ## Development guidelines
 
 ### Pre-commit tool

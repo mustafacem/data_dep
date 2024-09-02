@@ -1,7 +1,9 @@
 import logging
+import os
 import uuid
 from typing import Any, AsyncIterator, Literal, TypedDict
 
+from dotenv import load_dotenv
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from langchain_core.chat_history import InMemoryChatMessageHistory
@@ -18,10 +20,13 @@ class Task(TypedDict):
     config: Any
 
 
-logging.basicConfig(level=logging.DEBUG)
+load_dotenv()
 root = APIRouter()
 prompt_tasks_store: dict[str, Task] = {}
-agent = Agent(llm=ChatOpenAI(model="gpt-4o-mini"), vectorstore=get_vectorstore("test"))
+agent = Agent(
+    llm=ChatOpenAI(model="gpt-4o-mini"),
+    vectorstore=get_vectorstore(os.environ["DB_COLLECTION"]),
+)
 
 
 class AudienceContext(BaseModel):
