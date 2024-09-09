@@ -12,7 +12,8 @@ from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, HttpUrl
 
-from insight_engine.agent import Agent, AgentState, AudienceType
+from insight_engine.agent import Agent, AgentState
+from insight_engine.prompt import AUDIENCE_STORE
 from insight_engine.vectordb import get_vectorstore
 
 
@@ -92,7 +93,7 @@ def process_context_request(req: PromptRequest) -> AgentState:
         raise ValueError("There is missing audience specification in the context")
 
     try:
-        audience = AudienceType[audiences[-1].audience]
+        audience = AUDIENCE_STORE[audiences[-1].audience]
     except KeyError:
         raise ValueError(
             f"Invalid audience type specified in the context: {audiences[-1].audience}"

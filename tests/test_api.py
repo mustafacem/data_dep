@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from insight_engine.agent import AnswerEvent, AudienceType, FinalEvent, RetrieveEvent
+from insight_engine.agent import AnswerEvent, FinalEvent, RetrieveEvent
 from insight_engine.api import root
 from insight_engine.api.routers import (
     AudienceContext,
@@ -12,6 +12,7 @@ from insight_engine.api.routers import (
     PromptRequest,
     process_context_request,
 )
+from insight_engine.prompt import AUDIENCE_STORE
 
 client = TestClient(root)
 DUMMY_REQUEST = {
@@ -71,7 +72,7 @@ def test_process_context_request() -> None:
     response = process_context_request(request)
 
     assert response["prompt"] == "How do you know it?"
-    assert response["audience"] == AudienceType.CFO
+    assert response["audience"] == AUDIENCE_STORE["CFO"]
     assert len(response["chat_history"]) == 4
 
 
