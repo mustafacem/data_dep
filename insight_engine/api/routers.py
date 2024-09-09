@@ -6,6 +6,7 @@ from typing import Any, AsyncIterator, Literal, TypedDict
 from dotenv import load_dotenv
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
+from kd_logging import setup_logger
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
@@ -22,11 +23,12 @@ class Task(TypedDict):
 
 load_dotenv()
 root = APIRouter()
-prompt_tasks_store: dict[str, Task] = {}
+prompt_tasks_store: dict[str, Task] = {}  # TODO: make serverless
 agent = Agent(
     llm=ChatOpenAI(model="gpt-4o-mini"),
     vectorstore=get_vectorstore(os.environ["DB_COLLECTION"]),
 )
+logger = setup_logger(__name__, level=logging.DEBUG)
 
 
 class AudienceContext(BaseModel):
@@ -125,7 +127,7 @@ async def answer_prompt(req: PromptRequest) -> PromptAnswer:
     """
     run_id = str(uuid.uuid4())
     input = process_context_request(req=req)
-    logging.debug(f"Processed context from PromptRequest:\n{input}")
+    logger.debug(f"Processed context from PromptRequest:\n{input}")
 
     config = {"run_id": run_id}
     prompt_tasks_store[run_id] = {
@@ -153,7 +155,7 @@ async def stream_events(
     # be harder to parse for the API user.
     """
     async for event in agent.run(input=input, config=config):
-        yield event.json() + "\n"
+        yield event.json() + "\n"  # TODO server sent events
 
 
 @root.get("/stream/{run_id}")
