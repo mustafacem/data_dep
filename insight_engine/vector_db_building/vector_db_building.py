@@ -53,8 +53,7 @@ def delete_images_in_folder(folder_path):
             except Exception as e:
                 print(f"ERROR {image}: {e}")
 
-
-def build_the_db(path_of_pdf, input_path , output_path):
+def return_content(path_of_pdf,output_path):
         raw_pdf_elements = extract_pdf_elements(path_of_pdf, output_path, 4000, 500, 300)
         texts, tables = categorize_elements(raw_pdf_elements)
 
@@ -64,6 +63,12 @@ def build_the_db(path_of_pdf, input_path , output_path):
 
         text_summaries, table_summaries = generate_text_summaries(texts_4k_token, tables, 1, summarize_texts=True)
         img_base64_list, image_summaries = generate_img_summaries("figures")
+        delete_images_in_folder("figures")
+        return text_summaries, table_summaries , img_base64_list, image_summaries, texts, tables
+
+def build_the_db(path_of_pdf, input_path , output_path):
+
+        text_summaries, table_summaries , img_base64_list, image_summaries,texts, tables = return_content(path_of_pdf,output_path)
         delete_images_in_folder("figures")
 
         vectorstore = Chroma(

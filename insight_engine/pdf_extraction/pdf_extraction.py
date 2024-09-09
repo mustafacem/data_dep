@@ -33,6 +33,8 @@ from IPython.display import HTML, display
 from io import BytesIO
 from PIL import Image
 
+from langchain_core.documents.base import Document
+
 from insight_engine.prompt.system_prompts import PROMPT_TEXT
 from insight_engine.models.models import model_for_summerization
 
@@ -48,24 +50,40 @@ client = OpenAI(
 )
 
 
-def extract_pdf_elements(path,output_path,max_characters,new_after_n_chars,combine_text_under_n_chars):
+
+
+
+
+def extract_pdf_elements(path_of_pdf: str, output_path: str, max_characters: int, new_after_n_chars: int, combine_text_under_n_chars: int) -> list[Document]:
     """
     Extract images, tables, and chunk text from a PDF file.
-    path: File path, which is used to dump images (.jpg)
-    fname: File name
+
+    path_of_pdf: File path to the PDF file.
+    output_path: Directory path where images and other outputs will be saved.
+    max_characters: Maximum number of characters in a chunk of text.
+    new_after_n_chars: Number of characters after which a new chunk of text should be created.
+    combine_text_under_n_chars: Combine text chunks smaller than this number into one chunk.
+
+    Returns: List of Document objects extracted from the PDF.
     """
     if not os.path.exists(output_path):
         os.makedirs(output_path)
-    return partition_pdf(
-        filename=path ,
+    
+    documents = partition_pdf(
+        filename=path_of_pdf,
         extract_images_in_pdf=True,
         infer_table_structure=True,
         chunking_strategy="by_title",
-        max_characters= max_characters,
-        new_after_n_chars= new_after_n_chars,
-        combine_text_under_n_chars= combine_text_under_n_chars,
-        image_output_dir_path= output_path,
+        max_characters=max_characters,
+        new_after_n_chars=new_after_n_chars,
+        combine_text_under_n_chars=combine_text_under_n_chars,
+        image_output_dir_path=output_path
     )
+    
+    
+    return documents
+
+
 
 def categorize_elements(raw_pdf_elements):
     """
@@ -182,43 +200,40 @@ def image_def(img_base64, prompt):
 
 
 
+
 def generate_img_summaries_rule(pdf_path, images_dir='extracted_images_main_0'):
     if not os.path.exists(images_dir):
         os.makedirs(images_dir)
 
     doc = fitz.open(pdf_path)
-    text_file_path = pdf_path.replace('.pdf', '_extracted_text.txt')
 
     img_base64_list = []
-
     image_summaries = []
 
-    with open(text_file_path, 'w') :
-        for page_num in range(len(doc)):
-            page = doc.load_page(page_num)
-            text = page.get_text("text")
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        text = page.get_text("text")
 
-            image_list = page.get_images(full=True)
-            for image_index, img in enumerate(image_list, start=1):
-                xref = img[0]
-                base_image = doc.extract_image(xref)
-                image_bytes = base_image["image"]
+        image_list = page.get_images(full=True)
+        for image_index, img in enumerate(image_list, start=1):
+            xref = img[0]
+            base_image = doc.extract_image(xref)
+            image_bytes = base_image["image"]
 
-                fig_text = find_fig_text(text)
-                fig_text = fig_text.replace("/", " or ")
-                if fig_text:
-                    print(f"Text related to images on Page {page_num + 1}, Image {image_index}:\n{fig_text}\n")
+            fig_text = find_fig_text(text)
+            fig_text = fig_text.replace("/", " or ")
+            if fig_text:
+                print(f"Text related to images on Page {page_num + 1}, Image {image_index}:\n{fig_text}\n")
 
-                image_filename = f"{fig_text}.png"
-                image_path = os.path.join(images_dir, image_filename)
-                with open(image_path, 'wb') as image_file:
-                    image_file.write(image_bytes)
+            image_filename = f"{fig_text}.png"
+            image_path = os.path.join(images_dir, image_filename)
+            with open(image_path, 'wb') as image_file:
+                image_file.write(image_bytes)
 
-
-                base64_image = encode_image(image_path)
-                img_base64_list.append(base64_image)
-                image_summaries.append(image_def(base64_image, fig_text))
-
+            base64_image = encode_image(image_path)
+            img_base64_list.append(base64_image)
+            image_summaries.append(image_def(base64_image, fig_text))
+            print(img_base64_list, image_summaries)
 
     return img_base64_list, image_summaries
 
