@@ -54,7 +54,7 @@ client = OpenAI(
 
 
 
-def extract_pdf_elements(path_of_pdf: str, output_path: str, max_characters: int, new_after_n_chars: int, combine_text_under_n_chars: int) -> list[Document]:
+def extract_pdf_elements(path_of_pdf, output_path, max_characters, new_after_n_chars, combine_text_under_n_chars):
     """
     Extract images, tables, and chunk text from a PDF file.
 
@@ -80,8 +80,8 @@ def extract_pdf_elements(path_of_pdf: str, output_path: str, max_characters: int
         image_output_dir_path=output_path
     )
     
-    
     return documents
+
 
 
 
