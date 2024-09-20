@@ -18,10 +18,12 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from openai import OpenAI
 
+
 def looks_like_base64(sb):
     if isinstance(sb, bytes):
-        sb = sb.decode('utf-8')  # Decode bytes to string
+        sb = sb.decode("utf-8")  # Decode bytes to string
     return re.match(r"^[A-Za-z0-9+/]+[=]{0,2}$", sb) is not None
+
 
 def resize_base64_image(base64_string, size=(128, 128)):
     """
@@ -79,10 +81,11 @@ def img_prompt_func(data_dict):
     """
     Join the context into a single string
     """
-    #formatted_texts = "\n".join(data_dict["context"]["texts"])
+    # formatted_texts = "\n".join(data_dict["context"]["texts"])
     formatted_texts = "\n".join(
-    text.decode('utf-8') if isinstance(text, bytes) else str(text)
-    for text in data_dict["context"]["texts"])
+        text.decode("utf-8") if isinstance(text, bytes) else str(text)
+        for text in data_dict["context"]["texts"]
+    )
     messages = []
 
     if data_dict["context"]["images"]:
@@ -108,12 +111,16 @@ def img_prompt_func(data_dict):
     return [HumanMessage(content=messages)]
 
 
-def create_multi_vector_retriever(vectorstore, text_summaries, texts, table_summaries, tables, image_summaries, images):
+def create_multi_vector_retriever(
+    vectorstore, text_summaries, texts, table_summaries, tables, image_summaries, images
+):
     """
     Create retriever that indexes summaries, but returns raw images or texts
     """
 
-    store =  LocalFileStore("insight_engine/rag_creation/data_depo")#("insight_engine\rag_creation\data_depo")
+    store = LocalFileStore(
+        "insight_engine/rag_creation/data_depo"
+    )  # ("insight_engine\rag_creation\data_depo")
 
     id_key = "doc_id"
 
@@ -122,6 +129,7 @@ def create_multi_vector_retriever(vectorstore, text_summaries, texts, table_summ
         docstore=store,
         id_key=id_key,
     )
+
     def add_documents(retriever, doc_summaries, doc_contents):
         doc_ids = [str(uuid.uuid4()) for _ in doc_contents]
         summary_docs = [
@@ -129,10 +137,10 @@ def create_multi_vector_retriever(vectorstore, text_summaries, texts, table_summ
             for i, s in enumerate(doc_summaries)
         ]
         retriever.vectorstore.add_documents(summary_docs)
-        
+
         # Convert content to bytes if it's a string before saving to the store
         byte_content = [
-            content.encode('utf-8') if isinstance(content, str) else content
+            content.encode("utf-8") if isinstance(content, str) else content
             for content in doc_contents
         ]
         retriever.docstore.mset(list(zip(doc_ids, byte_content)))
@@ -168,18 +176,19 @@ def multi_modal_rag_chain(retriever):
 
     return chain
 
+
 def call_for_answer(query, retriever_multi_vector_img, chain_multimodal_rag):
     docs = retriever_multi_vector_img.get_relevant_documents(query, limit=7)
-    img  = ""
-    con =  ""
+    img = ""
+    con = ""
     for x in docs:
         if " " in str(x):
-            pass # this section is for llms that run locally 
+            pass  # this section is for llms that run locally
         else:
-            if img ==  "":
+            if img == "":
                 img = x
-    
-    con = chain_multimodal_rag.invoke(query )
+
+    con = chain_multimodal_rag.invoke(query)
     if img == "":
         print("No image found")
     if con == "":

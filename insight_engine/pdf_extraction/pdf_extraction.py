@@ -5,7 +5,7 @@ import networkx as nx
 import re
 from openai import OpenAI
 
-import os 
+import os
 
 from unstructured.partition.pdf import partition_pdf
 import base64
@@ -23,7 +23,7 @@ from pdfminer.utils import open_filename
 import fitz
 import pymupdf
 import pytesseract
-from pdf2image import*
+from pdf2image import *
 from unstructured.partition.utils.ocr_models.tesseract_ocr import OCRAgentTesseract
 import nltk
 import io
@@ -45,16 +45,16 @@ load_dotenv()
 
 openai_api = os.getenv("OPENAI_API_KEY")
 
-client = OpenAI(
-    api_key= openai_api
-)
+client = OpenAI(api_key=openai_api)
 
 
-
-
-
-
-def extract_pdf_elements(path_of_pdf, output_path, max_characters, new_after_n_chars, combine_text_under_n_chars):
+def extract_pdf_elements(
+    path_of_pdf,
+    output_path,
+    max_characters,
+    new_after_n_chars,
+    combine_text_under_n_chars,
+):
     """
     Extract images, tables, and chunk text from a PDF file.
 
@@ -68,7 +68,7 @@ def extract_pdf_elements(path_of_pdf, output_path, max_characters, new_after_n_c
     """
     if not os.path.exists(output_path):
         os.makedirs(output_path)
-    
+
     documents = partition_pdf(
         filename=path_of_pdf,
         extract_images_in_pdf=True,
@@ -77,12 +77,10 @@ def extract_pdf_elements(path_of_pdf, output_path, max_characters, new_after_n_c
         max_characters=max_characters,
         new_after_n_chars=new_after_n_chars,
         combine_text_under_n_chars=combine_text_under_n_chars,
-        image_output_dir_path=output_path
+        image_output_dir_path=output_path,
     )
-    
+
     return documents
-
-
 
 
 def categorize_elements(raw_pdf_elements):
@@ -99,7 +97,8 @@ def categorize_elements(raw_pdf_elements):
             texts.append(str(element))
     return texts, tables
 
-def generate_text_summaries(texts, tables, max_concurrency , summarize_texts=False): 
+
+def generate_text_summaries(texts, tables, max_concurrency, summarize_texts=False):
     """
     Summarize text elements
     texts: List of str
@@ -112,29 +111,30 @@ def generate_text_summaries(texts, tables, max_concurrency , summarize_texts=Fal
 
     summarize_chain = {"element": lambda x: x} | prompt | model | StrOutputParser()
 
-
-    #summarize_chain = {"element": lambda x: x} | prompt | ChatOpenAI() | StrOutputParser() # 
+    # summarize_chain = {"element": lambda x: x} | prompt | ChatOpenAI() | StrOutputParser() #
 
     text_summaries = []
     table_summaries = []
-    # Be aware increasing of max concurrency can resault in failure also amount of credits spent decreases that probbility 
+    # Be aware increasing of max concurrency can resault in failure also amount of credits spent decreases that probbility
     if texts and summarize_texts:
-        text_summaries = summarize_chain.batch(texts, {"max_concurrency": max_concurrency})
+        text_summaries = summarize_chain.batch(
+            texts, {"max_concurrency": max_concurrency}
+        )
     elif texts:
         text_summaries = texts
 
     if tables:
-        table_summaries = summarize_chain.batch(tables, {"max_concurrency": max_concurrency})
+        table_summaries = summarize_chain.batch(
+            tables, {"max_concurrency": max_concurrency}
+        )
 
     return text_summaries, table_summaries
-
 
 
 def encode_image(image_path):
     """Getting the base64 string"""
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
-    
 
 
 def image_summarize(img_base64, prompt):
@@ -182,26 +182,20 @@ def generate_img_summaries(path):
             img_base64_list.append(base64_image)
             image_summaries.append(image_summarize(base64_image, prompt))
 
-
     return img_base64_list, image_summaries
 
 
 def find_fig_text(text):
-    pattern = r'Fig\..*?\.'
+    pattern = r"Fig\..*?\."
     fig_sentences = re.findall(pattern, text, flags=re.DOTALL)
-    return ' '.join(fig_sentences) if fig_sentences else ''
-
-
+    return " ".join(fig_sentences) if fig_sentences else ""
 
 
 def image_def(img_base64, prompt):
     return prompt
 
 
-
-
-
-def generate_img_summaries_rule(pdf_path, images_dir='extracted_images_main_0'):
+def generate_img_summaries_rule(pdf_path, images_dir="extracted_images_main_0"):
     if not os.path.exists(images_dir):
         os.makedirs(images_dir)
 
@@ -223,11 +217,13 @@ def generate_img_summaries_rule(pdf_path, images_dir='extracted_images_main_0'):
             fig_text = find_fig_text(text)
             fig_text = fig_text.replace("/", " or ")
             if fig_text:
-                print(f"Text related to images on Page {page_num + 1}, Image {image_index}:\n{fig_text}\n")
+                print(
+                    f"Text related to images on Page {page_num + 1}, Image {image_index}:\n{fig_text}\n"
+                )
 
             image_filename = f"{fig_text}.png"
             image_path = os.path.join(images_dir, image_filename)
-            with open(image_path, 'wb') as image_file:
+            with open(image_path, "wb") as image_file:
                 image_file.write(image_bytes)
 
             base64_image = encode_image(image_path)
@@ -238,66 +234,94 @@ def generate_img_summaries_rule(pdf_path, images_dir='extracted_images_main_0'):
     return img_base64_list, image_summaries
 
 
-
-def topic_extraction(text_to_analyze, model, word_list =[], topic = ""):
-  if model == "gpt-3.5-turbo-instruct":
-    if topic == "":
-      if word_list == []:
-        completion = client.completions.create(
-            model = "gpt-3.5-turbo-instruct",
-            prompt = f"Extract distinct keywords  from: {text_to_analyze}  \n\nTopics:",
-            max_tokens = 600,
-            temperature = 0
-        )
-        return completion.choices[0].text.strip()
-      else:
-        completion = client.completions.create(
-        model = "gpt-3.5-turbo-instruct",
-        prompt = f"choose top 10  keywords from {word_list} most relevant to text :  {text_to_analyze}   \n\n Then itemeze and explain why they are important :",
-        max_tokens = 600,
-        temperature = 0)
-        return completion.choices[0].text.strip()
-    elif topic == "purefaction":
-        completion = client.completions.create(
-        model = "gpt-3.5-turbo-instruct",
-        prompt = f"you are given list of keywords from  given text : {text_to_analyze} return just keywords   \n\n keywords:",
-        max_tokens = 600,
-        temperature = 0)
-        return completion.choices[0].text.strip()
-  elif model == "gpt-4-turbo":
-    if topic == "":
-      if word_list == []:
-        # gpt4o doesnt work as good as this 
-        completion = client.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[
-                {"role": "system", "content": "You are an assistant that helps with extracting keywords."},
-                {"role": "user", "content": f"Extract distinct keywords  from: {text_to_analyze}  \n\nTopics:",}
-            ]
-        )
-        return completion.choices[0].message.content
-      else:
-        completion = client.chat.completions.create(
-        model="gpt-4-turbo",
-        messages=[
-              {"role": "system", "content": "You are an assistant that helps with extracting keywords."},
-              {"role": "user", "content": f"choose top 10 keywords from {word_list} most relevant to text: {text_to_analyze}\n\n Then itemize and explain why they are important to text:"}
-        ])
-        return completion.choices[0].message.content
-    else: 
-      if word_list == []:
-        completion = client.chat.completions.create(
-        model="gpt-4-turbo",
-        messages=[
-            {"role": "system", "content": "You are an assistant that helps with extracting keywords."},
-            {"role": "user", "content": f"Extract distinct keywords with focus on {topic} realted ones  from: {text_to_analyze}  \n\nTopics:",}
-        ] )
-        return completion.choices[0].message.content
-      else:
-        completion = client.chat.completions.create(
-        model="gpt-4-turbo",
-        messages=[
-            {"role": "system", "content": "You are an assistant that helps with extracting keywords."},
-            {"role": "user", "content": f"choose top 10 keywords with focus on {topic} realted ones  from {word_list} most relevant to text: {text_to_analyze}\n\n Then itemize and explain why they are important to text:"}
-        ])
-        return completion.choices[0].message.content 
+def topic_extraction(text_to_analyze, model, word_list=[], topic=""):
+    if model == "gpt-3.5-turbo-instruct":
+        if topic == "":
+            if word_list == []:
+                completion = client.completions.create(
+                    model="gpt-3.5-turbo-instruct",
+                    prompt=f"Extract distinct keywords  from: {text_to_analyze}  \n\nTopics:",
+                    max_tokens=600,
+                    temperature=0,
+                )
+                return completion.choices[0].text.strip()
+            else:
+                completion = client.completions.create(
+                    model="gpt-3.5-turbo-instruct",
+                    prompt=f"choose top 10  keywords from {word_list} most relevant to text :  {text_to_analyze}   \n\n Then itemeze and explain why they are important :",
+                    max_tokens=600,
+                    temperature=0,
+                )
+                return completion.choices[0].text.strip()
+        elif topic == "purefaction":
+            completion = client.completions.create(
+                model="gpt-3.5-turbo-instruct",
+                prompt=f"you are given list of keywords from  given text : {text_to_analyze} return just keywords   \n\n keywords:",
+                max_tokens=600,
+                temperature=0,
+            )
+            return completion.choices[0].text.strip()
+    elif model == "gpt-4-turbo":
+        if topic == "":
+            if word_list == []:
+                # gpt4o doesnt work as good as this
+                completion = client.chat.completions.create(
+                    model="gpt-4-turbo",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an assistant that helps with extracting keywords.",
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Extract distinct keywords  from: {text_to_analyze}  \n\nTopics:",
+                        },
+                    ],
+                )
+                return completion.choices[0].message.content
+            else:
+                completion = client.chat.completions.create(
+                    model="gpt-4-turbo",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an assistant that helps with extracting keywords.",
+                        },
+                        {
+                            "role": "user",
+                            "content": f"choose top 10 keywords from {word_list} most relevant to text: {text_to_analyze}\n\n Then itemize and explain why they are important to text:",
+                        },
+                    ],
+                )
+                return completion.choices[0].message.content
+        else:
+            if word_list == []:
+                completion = client.chat.completions.create(
+                    model="gpt-4-turbo",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an assistant that helps with extracting keywords.",
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Extract distinct keywords with focus on {topic} realted ones  from: {text_to_analyze}  \n\nTopics:",
+                        },
+                    ],
+                )
+                return completion.choices[0].message.content
+            else:
+                completion = client.chat.completions.create(
+                    model="gpt-4-turbo",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an assistant that helps with extracting keywords.",
+                        },
+                        {
+                            "role": "user",
+                            "content": f"choose top 10 keywords with focus on {topic} realted ones  from {word_list} most relevant to text: {text_to_analyze}\n\n Then itemize and explain why they are important to text:",
+                        },
+                    ],
+                )
+                return completion.choices[0].message.content
