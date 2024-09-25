@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
 
 # install depends through poetry before copying the codebase
 RUN pip install poetry
-
+COPY droid-core ./droid-core
 COPY pyproject.toml poetry.lock ./
 COPY insight_engine/__init__.py ./insight_engine/
 
