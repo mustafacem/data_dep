@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
+from insight_engine.prompt.store import PromptStore
+
 
 @dataclass
 class EntityInfo:
@@ -270,12 +272,10 @@ REPORT_STRUCTURES = {
     "Morning News": MORNING,
 }
 
-with open("prompts/sys/agent_sys_template.md", "r", encoding="utf-8") as file:
-    AGENT_SYS_TEMPLATE = file.read()
-
+SYS_PROMPTS = PromptStore(directory="prompts/sys/")
 CHAT_TEMPLATE = ChatPromptTemplate.from_messages(
     [
-        ("system", AGENT_SYS_TEMPLATE),
+        ("system", SYS_PROMPTS["agent_sys_template"].prompt),
         MessagesPlaceholder(variable_name="chat_history"),
         ("human", "{prompt}"),
     ]

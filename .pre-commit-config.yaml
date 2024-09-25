@@ -46,6 +46,7 @@ repos:
             "--disallow-untyped-defs",
             "--disallow-untyped-calls",
           ]
+        additional_dependencies: ["types-PyYAML"]
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.1.0
