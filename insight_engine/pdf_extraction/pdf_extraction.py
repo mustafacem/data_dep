@@ -1,45 +1,19 @@
-import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
-from wordcloud import WordCloud
-import networkx as nx
+import base64
+import os
 import re
+
+import fitz
+from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
 from openai import OpenAI
 
-import os
-
+# from pdf2image import *
 from unstructured.partition.pdf import partition_pdf
-import base64
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import HumanMessage
-from langchain_text_splitters import CharacterTextSplitter
-from langchain_openai import ChatOpenAI
-from langchain.storage import InMemoryStore
-from langchain.retrievers.multi_vector import MultiVectorRetriever
-from langchain_core.documents import Document
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
-
-from pdfminer.utils import open_filename
-import fitz
-import pymupdf
-import pytesseract
-from pdf2image import *
-from unstructured.partition.utils.ocr_models.tesseract_ocr import OCRAgentTesseract
-import nltk
-import io
-import re
-import IPython
-from IPython.display import HTML, display
-from io import BytesIO
-from PIL import Image
-
-from langchain_core.documents.base import Document
 
 from insight_engine.prompt.system_prompts import PROMPT_TEXT
-from insight_engine.models.models import model_for_summerization
-
-
-from dotenv import load_dotenv
 
 load_dotenv()
 

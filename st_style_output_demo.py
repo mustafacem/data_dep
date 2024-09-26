@@ -1,53 +1,40 @@
+import base64
 import os
+import tempfile
+
+# import pdfminer.utils
+from io import BytesIO
+
 import streamlit as st
 from dotenv import load_dotenv
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import ChatMessage
 from langchain_openai import ChatOpenAI
-from langchain_text_splitters import CharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from PIL import Image
 from streamlit.delta_generator import DeltaGenerator
+
+from insight_engine.pdf_extraction.pdf_extraction import topic_extraction
 from insight_engine.prompt.knowledge import COCA_COLA
 from insight_engine.prompt.system_prompts import (
+    ALG,
     PRACTICE_GROUPS,
     REPORT_STRUCTURES,
     USER_QUERY,
-    ALG,
 )
-import tempfile
-import matplotlib.pyplot as plt
-import base64
-import fitz
-
-# import pdfminer.utils
-from io import BytesIO
-from PIL import Image
-from insight_engine.pdf_extraction.pdf_extraction import (
-    topic_extraction,
-)
-
+from insight_engine.rag_creation.rag_creation import call_for_answer
 from insight_engine.vector_db_building.vector_db_building import (
     build_the_db,
     build_the_db_multi,
     truncate_to_token_limit,
 )
-from insight_engine.rag_creation.rag_creation import call_for_answer
 from insight_engine.word_cloud.word_cloud import (
-    generate_word_cloud_2,
-    visualize_network,
     create_keyword_network,
     extract_words,
+    generate_word_cloud_2,
+    visualize_network,
 )
 
-
-from nltk.tokenize import sent_tokenize
-from nltk.tokenize.punkt import PunktSentenceTokenizer
-
-import nltk
-
 # nltk.download('all')# if punkt tokenizer cant  be found enable this code or any other nltk related error
-from dotenv import load_dotenv
 
 
 load_dotenv()
@@ -122,9 +109,7 @@ if uploaded_file and not st.session_state.get("single_pdf_processed", False):
         output_path = os.path.join(os.getcwd(), "output")
 
         retriever_multi_vector_img, chain_multimodal_rag, whole_str = build_the_db(
-            path_of_pdf,
-            input_path, 
-            output_path
+            path_of_pdf, input_path, output_path
         )
 
         max_attempts = 1
@@ -201,12 +186,11 @@ if uploaded_files and not st.session_state.get("multiple_pdfs_processed", False)
     text_summaries_with_names = []
     spesefic_topic = st.text_input("Enter spesefic topic if desired:")
     if st.button("Proceed with text processing"):
-
         input_path = os.getcwd()
         output_path = os.path.join(os.getcwd(), "output")
 
         retriever_multi_vector_img, chain_multimodal_rag, whole_str = (
-            build_the_db_multi(uploaded_files, input_path, output_path)
+            build_the_db_multi(uploaded_files, output_path)
         )
 
         max_attempts = 1

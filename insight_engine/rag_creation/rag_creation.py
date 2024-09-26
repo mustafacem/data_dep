@@ -2,21 +2,15 @@ import base64
 import io
 import re
 import uuid
-from PIL import Image
-from collections import defaultdict
-import openai
+
+from langchain.retrievers.multi_vector import MultiVectorRetriever
+from langchain.storage import LocalFileStore
 from langchain_core.documents import Document
 from langchain_core.messages import HumanMessage
 from langchain_core.output_parsers import StrOutputParser
-from langchain.retrievers.multi_vector import MultiVectorRetriever
-from langchain.storage import InMemoryStore
-from langchain_openai import ChatOpenAI
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
-from langchain.storage import LocalFileStore
-
-from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from openai import OpenAI
+from PIL import Image
 
 
 def looks_like_base64(sb):
@@ -45,8 +39,8 @@ def is_image_data(b64data):
     Check if the base64 data is an image by looking at the start of the data
     """
     image_signatures = {
-        b"\xFF\xD8\xFF": "jpg",
-        b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A": "png",
+        b"\xff\xd8\xff": "jpg",
+        b"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a": "png",
         b"\x47\x49\x46\x38": "gif",
         b"\x52\x49\x46\x46": "webp",
     }

@@ -127,7 +127,7 @@ ALG = """
 
 4. Boosting Referral Scores
 
-    Adjusting Scores: The co-occurrence scores of keywords are adjusted. 
+    Adjusting Scores: The co-occurrence scores of keywords are adjusted.
     Final Scores: The final scores for each keyword are calculated, which will determine their visual prominence in the word cloud.
     Output: Keywords' final scores are boosted to reflect their importance in the text.
 

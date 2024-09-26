@@ -1,22 +1,22 @@
+import glob
 import os
+import tempfile
+
 from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
+from transformers import GPT2Tokenizer
+
 from insight_engine.pdf_extraction.pdf_extraction import (
-    generate_img_summaries,
-    extract_pdf_elements,
     categorize_elements,
+    extract_pdf_elements,
+    generate_img_summaries,
     generate_text_summaries,
 )
-from langchain_text_splitters import CharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
 from insight_engine.rag_creation.rag_creation import (
     create_multi_vector_retriever,
     multi_modal_rag_chain,
 )
-
-import glob
-import tempfile
-
-from transformers import GPT2Tokenizer
 
 # Initialize the tokenizer
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
@@ -82,7 +82,6 @@ def return_content(path_of_pdf, output_path):
 
 
 def build_the_db(path_of_pdf, input_path, output_path):
-
     text_summaries, table_summaries, img_base64_list, image_summaries, texts, tables = (
         return_content(path_of_pdf, output_path)
     )
@@ -108,8 +107,7 @@ def build_the_db(path_of_pdf, input_path, output_path):
     return retriever_multi_vector_img, chain_multimodal_rag, whole_str
 
 
-def build_the_db_multi(uploaded_files, input_path, output_path):
-
+def build_the_db_multi(uploaded_files, output_path):
     texts, tables = [], []
     pdf_names = []
     text_summaries_with_names = []
@@ -121,7 +119,7 @@ def build_the_db_multi(uploaded_files, input_path, output_path):
         pdf_name = uploaded_file.name
         pdf_names.append(pdf_name)
 
-        input_path = os.getcwd()
+        # input_path = os.getcwd()
         output_path = os.path.join(os.getcwd(), "output")
         raw_pdf_elements = extract_pdf_elements(
             temp_file.name, output_path, 4000, 500, 300

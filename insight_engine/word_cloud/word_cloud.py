@@ -1,9 +1,10 @@
-import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
-from wordcloud import WordCloud
-import networkx as nx
 import re
 from collections import defaultdict
+
+import matplotlib.pyplot as plt
+import networkx as nx
+from matplotlib.colors import ListedColormap
+from wordcloud import WordCloud
 
 
 def visualize_network(G):
@@ -181,8 +182,7 @@ def print_node_values_sorted(network):
     node_values = {node: max(value, 1) for node, value in node_values.items()}
 
     # Sort nodes by their values in descending order
-    sorted_nodes = dict(sorted(node_values.items(), 
-                               key=lambda x: x[1], reverse=True))
+    sorted_nodes = dict(sorted(node_values.items(), key=lambda x: x[1], reverse=True))
 
     return sorted_nodes
 
@@ -195,8 +195,7 @@ def print_node_values_sorted_2(network):
     }
 
     # Sort nodes by their values in descending order
-    sorted_nodes = sorted(node_values.items(), 
-                          key=lambda x: x[1], reverse=True)
+    sorted_nodes = sorted(node_values.items(), key=lambda x: x[1], reverse=True)
 
     # Print nodes and their values
     for node, value in sorted_nodes:
