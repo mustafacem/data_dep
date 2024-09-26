@@ -105,7 +105,8 @@ async def test_stream_response() -> None:
 
     streamed_lines = [line for line in stream_response.iter_lines()]
 
-    assert EVENTS[1].chunk in streamed_lines[1]
-    assert EVENTS[2].chunk in streamed_lines[2]
-    assert EVENTS[3].chunk in streamed_lines[3]
-    assert EVENTS[4].output in streamed_lines[4]
+    for i in range(1, 4):
+        assert EVENTS[i].chunk in streamed_lines[i * 3 + 1]
+
+    final_idx = 4
+    assert EVENTS[final_idx].output in streamed_lines[final_idx * 3 + 1]
