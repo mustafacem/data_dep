@@ -167,3 +167,6 @@ scratch/
 # docker in vs code
 .devcontainer/
 .github/dependabot.yml
+
+# folder for data
+mounted_data/

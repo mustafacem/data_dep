@@ -74,4 +74,5 @@ def get_vectorstore(collection_name: str) -> VectorStore:
         client=ChromaDBConnector.get_client(),
         collection_name=collection_name,
         embedding_function=Embedding.function,
+        collection_metadata={"hnsw:M": 64},
     )
