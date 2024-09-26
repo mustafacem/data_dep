@@ -123,3 +123,29 @@ def test_similarity_search(
     )
 
     assert len(results) == 2
+
+
+def test_contain_embbeds(
+    mock_embedding: Any, mock_chroma_client: MagicMock | AsyncMock
+) -> None:
+    """Test similarity search in the vector store."""
+    vector_store = get_vectorstore(TEST_COLLETION_NAME)
+
+    documents = []
+    n = 1000
+    for i in range(n):
+        doc = Document(
+            page_content=f"I am {i} years old.",
+            metadata={"source": str(i)},
+            id=i,
+        )
+        documents.append(doc)
+
+    uuids = [str(uuid4()) for _ in range(len(documents))]
+
+    vector_store.add_documents(documents=documents, ids=uuids)
+
+    for i in range(n):
+        filter_q = {"source": str(i)}
+        docs = vector_store.similarity_search(query="", k=4, filter=filter_q)
+        assert len(docs) > 0
