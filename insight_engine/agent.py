@@ -1,6 +1,8 @@
+import logging
 from dataclasses import dataclass, field
 from typing import AsyncIterator, NotRequired, TypedDict
 
+from kd_logging import setup_logger
 from langchain_core.documents.base import Document
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
@@ -10,10 +12,17 @@ from langchain_core.runnables.schema import CustomStreamEvent, StandardStreamEve
 from langchain_core.vectorstores import VectorStore
 from langgraph.graph import START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
-from pydantic.v1 import BaseModel  # langchain will start using v2 in 0.3
+from pydantic.v1 import BaseModel, Field  # langchain will start using v2 in 0.3
 
-from insight_engine.prompt import CHAT_TEMPLATE, USER_TYPE_STORE
+from insight_engine.prompt import (
+    CHAT_TEMPLATE,
+    INDEXED_USER_TYPES,
+    INFER_USERS,
+    USER_TYPE_STORE,
+)
 from insight_engine.prompt.store import PromptItem
+
+logger = setup_logger(__name__, level=logging.INFO)
 
 
 class AnswerEvent(BaseModel):
@@ -52,6 +61,13 @@ class FinalEvent(BaseModel):
 StreamEvent = AnswerEvent | RetrieveEvent | FinalEvent
 
 
+class UserClassification(BaseModel):
+    predicted_user: str = Field(description="The predicted user type.")
+    predicted_user_index: int = Field(
+        description="The numerical index representing the predicted user type."
+    )
+
+
 class AgentState(TypedDict):
     """Represents the state of the agent graph during its execution.
 
@@ -60,8 +76,8 @@ class AgentState(TypedDict):
         chat_history (list[BaseMessage]): A list of chat messages that constitute
             the conversation history.
         user_type (PromptDescriptor, optional): The type of user interacting with the
-            agent. The agent should behave personalized for this type. TODO inference
-            of this
+            agent. The agent should behave personalized for this type. If not specified
+            then it is predcited.
         prompt (str): The last prompt provided by the user.
         retrieved_docs (list[Document], optional): A list of documents retrieved from
             the vector store based on the user's prompt.
@@ -103,11 +119,49 @@ class Agent:
 
         builder.add_node("retrieve", self.retrieve)
         builder.add_node("answer", self.answer)
+        builder.add_node("infer_user", self.infer_user)
 
         builder.add_edge(START, "retrieve")
         builder.add_edge("retrieve", "answer")
 
+        builder.add_edge(START, "infer_user")
+        builder.add_edge("infer_user", "answer")
+
         self.graph: CompiledStateGraph = builder.compile()
+
+    def infer_user(self, state: AgentState) -> dict:
+        """Infers the type of user based on the chat history and prompt.
+
+        Args:
+            state (AgentState): The current state of the agent.
+
+        Returns:
+            dict: A dictionary with the inferred user type if available,
+                otherwise an empty dictionary.
+        """
+        user_type = state.get("user_type")
+
+        if user_type:
+            return {}
+
+        chain = INFER_USERS | self.llm.with_structured_output(schema=UserClassification)
+
+        user_classification = chain.invoke(
+            input={
+                "chat_history": state.get("chat_history", []),
+                "prompt": state.get("prompt", ""),
+            }
+        )
+
+        if isinstance(user_classification, UserClassification):
+            idx = user_classification.predicted_user_index
+            return {"user_type": USER_TYPE_STORE[INDEXED_USER_TYPES[idx]]}
+        else:
+            logger.warning(
+                "During user type prediction was expected UserClassification "
+                f"but was returned: {user_classification}"
+            )
+            return {}
 
     def retrieve(self, state: AgentState) -> dict:
         """Retrieves documents from the vector store based on the user's prompt.
