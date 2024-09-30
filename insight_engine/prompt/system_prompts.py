@@ -285,12 +285,6 @@ CHAT_TEMPLATE = ChatPromptTemplate.from_messages(
 )
 
 INDEXED_USER_TYPES = {i: key for i, key in enumerate(USER_TYPE_STORE.store.keys())}
-USER_TYPES_LIST = ", ".join(
-    [
-        USER_TYPE_STORE[INDEXED_USER_TYPES[i]].metadata["user_type_name"]
-        for i in range(len(INDEXED_USER_TYPES))
-    ]
-)
 USER_TYPES_NUMBERED = "\n".join(
     [
         f"{str(i)}. {USER_TYPE_STORE[INDEXED_USER_TYPES[i]].metadata['user_type_name']}"
@@ -302,7 +296,6 @@ INFER_USERS = ChatPromptTemplate.from_messages(
         (
             "system",
             SYS_PROMPTS["infer_user"].prompt.format(
-                possible_types_csv=USER_TYPES_LIST,
                 possible_types_numbered=USER_TYPES_NUMBERED,
             ),
         ),

@@ -1,9 +1,13 @@
+import logging
 import os
 import re
 from dataclasses import dataclass
 from typing import Any
 
 import yaml
+from kd_logging import setup_logger
+
+logger = setup_logger(__name__, level=logging.INFO)
 
 
 def find_vars(text: str) -> list[str]:
@@ -63,12 +67,12 @@ class PromptStore:
 
     def load_md(self, filepath: str) -> PromptItem:
         """
-        Loads a markdown file with yaml front matter, extracts the prompt and
-            metadata, and returns a PromptItem.
+        Loads a markdown file with optional yaml front matter, extracts the
+        prompt and metadata, and returns a PromptItem.
 
         Args:
-            filepath (str): The path to the markdown file to be loaded. It
-                assumes that the file has a front matter!
+            filepath (str): The path to the markdown file to be loaded. If markdown
+                has a front matter, it will be extracted into metadata.
 
         Returns:
             PromptItem: A PromptItem object containing the prompt content
@@ -78,11 +82,12 @@ class PromptStore:
             content = file.read()
 
             if not content.startswith("---\n"):
-                raise ValueError(
+                logger.info(
                     f"The prompt in {filepath} is probably missing frontmatter!"
                 )
-
-            _, front_matter, md = content.split("---\n", 2)
+                front_matter, md = "", content
+            else:
+                _, front_matter, md = content.split("---\n", 2)
             data: dict = yaml.safe_load(front_matter)
 
         return PromptItem(prompt=md, metadata=data)
