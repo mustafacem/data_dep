@@ -2,15 +2,24 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+
 RUN apt-get update && apt-get install -y \
-  build-essential curl software-properties-common \
+  build-essential \
+  curl \
+  software-properties-common \
   git \
+  poppler-utils \
+  ffmpeg \
+  libgl1-mesa-glx \
+  tesseract-ocr \
   && rm -rf /var/lib/apt/lists/*
 
 # install depends through poetry before copying the codebase
 RUN pip install poetry
 COPY pyproject.toml poetry.lock ./
 COPY insight_engine/__init__.py ./insight_engine/
+
+
 RUN poetry config virtualenvs.create false
 RUN poetry install --no-interaction --no-ansi
 

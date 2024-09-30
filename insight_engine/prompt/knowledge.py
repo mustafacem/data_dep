@@ -8,7 +8,7 @@ The Coca-Cola Company operates with a complex matrix organizational structure th
 
 **Key components of Coca-Cola's organizational structure:**
 
-1. **Geographic Divisions:** Coca-Cola is divided into four main geographic segments: 
+1. **Geographic Divisions:** Coca-Cola is divided into four main geographic segments:
    - Europe, Middle East & Africa (EMEA)
    - Latin America
    - North America
@@ -58,7 +58,7 @@ Source: https://euromaidanpress.com/2024/06/18/bloomberg-cola-cola-continues-bri
 The article discusses why Coca-Cola Europacific Partners (CCEP) is currently a solid choice for trend investing. Key points include:
 
 1. **Trend Sustainability**: For profitable trades, confirming factors like sound fundamentals and positive earnings estimate revisions is crucial.
-   
+
 2. **Recent Price Strength**: CCEP has shown a solid price increase over 12 weeks (13.2%) and a 3.4% increase over the past four weeks, indicating continued investor interest and bullish momentum.
 
 3. **High Trading Range**: CCEP is trading at 80.5% of its 52-week High-Low Range, suggesting a potential breakout.
