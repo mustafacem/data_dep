@@ -137,7 +137,6 @@ def test_contain_embbeds(
         doc = Document(
             page_content=f"I am {i} years old.",
             metadata={"source": str(i)},
-            id=i,
         )
         documents.append(doc)
 
