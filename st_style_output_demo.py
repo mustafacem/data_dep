@@ -34,8 +34,15 @@ from insight_engine.word_cloud.word_cloud import (
     visualize_network,
 )
 
-# nltk.download('all')# if punkt tokenizer cant  be found enable this code or any other nltk related error
+import nltk
 
+#nltk.download('all')# if punkt tokenizer cant  be found enable this code or any other nltk related error
+nltk.download('punkt_tab')
+nltk.download('wordnet')
+nltk.download('stopwords')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('averaged_perceptron_tagger_eng')
+nltk.download('popular')  # Downloads a collection of commonly used resources.
 
 load_dotenv()
 
