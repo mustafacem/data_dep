@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y \
   tesseract-ocr \
   && rm -rf /var/lib/apt/lists/*
 
-# Set the environment variable for protobuf
 
+# install depends through poetry before copying the codebase
 RUN pip install poetry
 
 COPY pyproject.toml poetry.lock ./
