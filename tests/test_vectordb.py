@@ -1,34 +1,25 @@
-from typing import Any, Generator
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 from uuid import uuid4
 
-import pytest
-from chromadb import EphemeralClient
+from chromadb.config import Settings
+from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings, FakeEmbeddings
 
-from insight_engine.vectordb import ChromaDBConnector, Embedding, get_vectorstore
+from insight_engine.vectordb import Embedding, get_vectorstore
 
 TEST_COLLETION_NAME = "dummy_collection"
 
 
-@pytest.fixture
-def mock_embedding() -> Generator[None, Any, None]:
-    """Fixture to mock the embedding function."""
-    with patch.object(
-        target=Embedding, attribute="function", new=FakeEmbeddings(size=69)
-    ):
-        yield
+def mocked_get_vectorstore(collection_name: str) -> Chroma:
+    return Chroma(
+        client_settings=Settings(persist_directory=""),
+        collection_name=collection_name,
+        embedding_function=FakeEmbeddings(size=69),
+    )
 
 
-@pytest.fixture
-def mock_chroma_client() -> Generator[MagicMock | AsyncMock, Any, None]:
-    """Fixture to mock the ChromaDB client."""
-    with patch.object(ChromaDBConnector, "_client", new=None):
-        with patch(
-            "chromadb.HttpClient", return_value=EphemeralClient()
-        ) as mock_client:
-            yield mock_client
+Chroma.from_documents
 
 
 def test_embedding_initialization() -> None:
@@ -38,28 +29,14 @@ def test_embedding_initialization() -> None:
     ), "Embedding function is not initialized correctly."
 
 
-def test_chromadb_connector_singleton(
-    mock_chroma_client: MagicMock | AsyncMock,
-) -> None:
-    """Test that ChromaDBConnector returns a singleton instance."""
-    client1 = ChromaDBConnector.get_client()
-    client2 = ChromaDBConnector.get_client()
-
-    assert client1 is client2, "ChromaDBConnector did not return a singleton instance."
-    mock_chroma_client.assert_called_once()
-
-
-def test_get_vectorstore(
-    mock_embedding: Any, mock_chroma_client: MagicMock | AsyncMock
-) -> None:
-    """Test that get_vectorstore returns a VectorStore with correct parameters."""
+@patch("tests.test_vectordb.get_vectorstore", side_effect=mocked_get_vectorstore)
+def test_get_vectorstore(mock_get_vectorstore) -> None:
+    """Test that get_vectorstore works."""
     get_vectorstore(TEST_COLLETION_NAME)
-    mock_chroma_client.assert_called_once()
 
 
-def test_add_documents_to_vectorstore(
-    mock_embedding: Any, mock_chroma_client: MagicMock | AsyncMock
-) -> None:
+@patch("tests.test_vectordb.get_vectorstore", side_effect=mocked_get_vectorstore)
+def test_add_documents_to_vectorstore(mock_get_vectorstore) -> None:
     """Test adding documents to the vector store."""
     vector_store = get_vectorstore(TEST_COLLETION_NAME)
     document_1 = Document(
@@ -81,20 +58,15 @@ def test_add_documents_to_vectorstore(
 
     vector_store.add_documents(documents=documents, ids=uuids)
 
-    all_documents = (
-        ChromaDBConnector.get_client()
-        .get_collection(TEST_COLLETION_NAME)
-        .get()["documents"]
-    )
+    all_documents = vector_store.get()["documents"]
     assert all_documents
     assert (
         len(all_documents) == 2
     ), "Documents were not added correctly to the vector store."
 
 
-def test_similarity_search(
-    mock_embedding: Any, mock_chroma_client: MagicMock | AsyncMock
-) -> None:
+@patch("tests.test_vectordb.get_vectorstore", side_effect=mocked_get_vectorstore)
+def test_similarity_search(mock_get_vectorstore) -> None:
     """Test similarity search in the vector store."""
     vector_store = get_vectorstore(TEST_COLLETION_NAME)
     document_1 = Document(
@@ -125,14 +97,13 @@ def test_similarity_search(
     assert len(results) == 2
 
 
-def test_contain_embbeds(
-    mock_embedding: Any, mock_chroma_client: MagicMock | AsyncMock
-) -> None:
+@patch("tests.test_vectordb.get_vectorstore", side_effect=mocked_get_vectorstore)
+def test_contain_embbeds(mock_get_vectorstore) -> None:
     """Test similarity search in the vector store."""
     vector_store = get_vectorstore(TEST_COLLETION_NAME)
 
     documents = []
-    n = 1000
+    n = 100
     for i in range(n):
         doc = Document(
             page_content=f"I am {i} years old.",

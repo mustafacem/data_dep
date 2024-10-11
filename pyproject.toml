@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "insight-engine"
+name = "insight_engine"
 version = "0.1.0"
 description = ""
 authors = ["Adam Osusky <adam.osusky02@gmail.com>"]
@@ -28,7 +28,7 @@ pillow-heif = "^0.18.0"
 langchain-community = "^0.3.1"
 unstructured-pytesseract = "^0.3.13"
 nltk = "^3.9.1"
-protobuf = ">=3.20.0,<4.0.0" 
+protobuf = ">=3.20.0,<4.0.0"
 langchain-chroma = "^0.1.2"
 langgraph = "^0.2.4"
 fastapi = "^0.112.1"
