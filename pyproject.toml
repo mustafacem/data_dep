@@ -32,7 +32,6 @@ protobuf = ">=3.20.0,<4.0.0"
 langchain-chroma = "^0.1.2"
 langgraph = "^0.2.4"
 fastapi = "^0.112.1"
-kd_logging = { path = "droid-core/packages/kd_logging", develop = true }
 
 
 [tool.poetry.group.dev.dependencies]
