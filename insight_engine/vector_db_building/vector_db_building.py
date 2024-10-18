@@ -124,20 +124,72 @@ def build_the_db(path_of_pdf, input_path, output_path):
 
 
 
+import json
+
+PROCESSED_PDFS_FILE = "processed_pdfs.json"
+
+def load_processed_pdfs():
+    """Load the list of processed PDFs from a JSON file."""
+    if os.path.exists(PROCESSED_PDFS_FILE):
+        with open(PROCESSED_PDFS_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+def save_processed_pdfs(processed_pdfs):
+    """Save the list of processed PDFs to a JSON file."""
+    with open(PROCESSED_PDFS_FILE, "w") as f:
+        json.dump(processed_pdfs, f)
+
 def build_the_db_multi(file_paths, output_path):
+    # Initialize lists
     texts, tables = [], []
     pdf_names = []
     text_summaries_with_names = []
+    table_summaries = []  # Initialize table_summaries to avoid UnboundLocalError
+
+    # Load previously processed PDFs
+    processed_pdfs = load_processed_pdfs()
+
+    if not file_paths:
+        print("No new PDFs to process. Accessing previously processed data...")
+        if not processed_pdfs:
+            raise ValueError("No previously processed PDFs available.")
+        
+        # Load previous data from the vectorstore
+        vectorstore = get_vectorstore(collection_name="mm_rag_cj_blog")
+        retriever_multi_vector_img = create_multi_vector_retriever(
+            vectorstore,
+            [], [], [], [], [], []
+        )
+        
+        # Mocking the agent response for accessing old data
+        agent = Agent(llm=None, vectorstore=retriever_multi_vector_img)
+        agent.retrieve = lambda state: {"retrieved_docs": retriever_multi_vector_img.search(state['prompt'], k=4)}
+        agent.answer = lambda state: {
+            "output": f"Generated response for prompt: {state['prompt']}, context: {', '.join([doc.page_content for doc in state['retrieved_docs']])}"
+        }
+        
+        # Chain creation for multimodal RAG
+        chain_multimodal_rag = multi_modal_rag_chain(retriever_multi_vector_img)
+        whole_str = "Previously processed data accessed."
+        
+        # Return the retriever, chain, and a message indicating previous data is used
+        return retriever_multi_vector_img, chain_multimodal_rag, whole_str
 
     for file_path in file_paths:
+        pdf_name = os.path.basename(file_path)  # Extract the file name
+        
+        # Skip processing if the PDF was already processed
+        if pdf_name in processed_pdfs:
+            print(f"{pdf_name} has already been processed. Skipping.")
+            continue
+
         print(file_path)
 
         # Open the file from the file path
         with open(file_path, 'rb') as temp_file:
-            pdf_name = os.path.basename(file_path)  # Extract the file name
             pdf_names.append(pdf_name)
 
-            # input_path = os.getcwd()
             output_path = os.path.join(os.getcwd(), "output")
             raw_pdf_elements = extract_pdf_elements(
                 file_path, output_path, 4000, 500, 300
@@ -152,9 +204,11 @@ def build_the_db_multi(file_paths, output_path):
             joined_texts = " ".join(file_texts)
             texts_4k_token = text_splitter.split_text(joined_texts)
 
-            text_summaries, table_summaries = generate_text_summaries(
+            text_summaries, new_table_summaries = generate_text_summaries(
                 texts_4k_token, file_tables, 1, summarize_texts=True
             )
+
+            table_summaries.extend(new_table_summaries)
 
             # Prefix each text summary with the PDF name
             text_summaries_with_names.extend(
@@ -179,7 +233,7 @@ def build_the_db_multi(file_paths, output_path):
     )
     
     # Use modified agent for retrieval
-    agent = Agent(llm=None, vectorstore=retriever_multi_vector_img)  # LLM can be passed as needed
+    agent = Agent(llm=None, vectorstore=retriever_multi_vector_img)
 
     # Mocking the prompt response
     agent.retrieve = lambda state: {"retrieved_docs": retriever_multi_vector_img.search(state['prompt'], k=4)}
@@ -191,6 +245,10 @@ def build_the_db_multi(file_paths, output_path):
     chain_multimodal_rag = multi_modal_rag_chain(retriever_multi_vector_img)
 
     whole_str = " ".join(text_summaries_with_names)
+
+    # Add processed PDFs to the list and save
+    processed_pdfs.extend(pdf_names)
+    save_processed_pdfs(processed_pdfs)
 
     # Ensure all three values are returned
     return retriever_multi_vector_img, chain_multimodal_rag, whole_str

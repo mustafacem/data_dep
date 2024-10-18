@@ -30,6 +30,10 @@ from insight_engine.word_cloud.word_cloud import (
 
 import nltk
 
+
+# Call this function when loading
+
+
 # nltk downloads if needed
 nltk.download('punkt_tab')
 nltk.download('wordnet')
@@ -168,6 +172,9 @@ if st.button("Process Single PDF"):
 pdfs_directory = os.path.join(os.getcwd(), "directory_of_multi_pdfs")  # Specify directory with multiple PDFs
 multiple_pdf_files = [os.path.join(pdfs_directory, pdf) for pdf in os.listdir(pdfs_directory) if pdf.endswith('.pdf')]
 
+emp_directory = os.path.join(os.getcwd(), "empty")  # Specify directory with multiple PDFs
+emp_files = [os.path.join(pdfs_directory, pdf) for pdf in os.listdir(pdfs_directory) if pdf.endswith('.pdf')]
+
 # Process multiple PDFs with fixed paths
 st.header("Process Multiple PDF Reports")
 if st.button("Process Multiple PDFs"):
@@ -235,6 +242,7 @@ if st.button("Process Multiple PDFs"):
     st.session_state["retriever_multi_vector_img"] = retriever_multi_vector_img
     st.session_state["chain_multimodal_rag"] = chain_multimodal_rag
 
+
 st.header("Chat with your PDFs")
 
 # Initialize or retrieve the session state for storing chat history
@@ -274,11 +282,37 @@ if user_input:
             image = Image.open(BytesIO(decoded_image))
             st.image(image, caption="Base64 Decoded Image")
     else:
-        st.error("Please process a PDF first.")
+        retriever_multi_vector_img, chain_multimodal_rag, whole_str = build_the_db_multi(emp_files
+        , output_path)
+        st.session_state["retriever_multi_vector_img"] = retriever_multi_vector_img
+        st.session_state["chain_multimodal_rag"] = chain_multimodal_rag
+        
+        if retriever_multi_vector_img and chain_multimodal_rag:
+            # Call the function to get the content and image based on the query
+            content, image = call_for_answer(
+                user_input, retriever_multi_vector_img, chain_multimodal_rag
+            )
+            
+            # Store the response in the session state as the assistant's message
+            st.session_state["messages"].append({"role": "assistant", "content": content})
+
+            # Display the chat history including the latest user and assistant messages
+            for msg in st.session_state["messages"]:
+                if msg["role"] == "user":
+                    st.chat_message("user").write(msg["content"])
+                else:
+                    st.chat_message("assistant").write(msg["content"])
+                    
+            # Display the image if available
+            if image:
+                base64_image = image
+                decoded_image = base64.b64decode(base64_image)
+                image = Image.open(BytesIO(decoded_image))
+                st.image(image, caption="Base64 Decoded Image")
 else:
     # Display the chat history if no new input was given
     for msg in st.session_state["messages"]:
         if msg["role"] == "user":
             st.chat_message("user").write(msg["content"])
         else:
-            st.chat_message("assistant").write(msg["content"])
+            st.chat_message("assistant").write(msg["content"])  
