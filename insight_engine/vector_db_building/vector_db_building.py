@@ -6,6 +6,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
 from transformers import GPT2Tokenizer
+from dotenv import load_dotenv
 
 from insight_engine.pdf_extraction.pdf_extraction import (
     categorize_elements,
@@ -105,14 +106,7 @@ def build_the_db(path_of_pdf, input_path, output_path):
         img_base64_list,
     )
     
-    # Use modified agent for retrieval
-    agent = Agent(llm=None, vectorstore=retriever_multi_vector_img)  # LLM can be passed as needed
-
-    # Mocking the prompt response
-    agent.retrieve = lambda state: {"retrieved_docs": retriever_multi_vector_img.search(state['prompt'], k=4)}
-    agent.answer = lambda state: {
-        "output": f"Generated response for prompt: {state['prompt']}, context: {', '.join([doc.page_content for doc in state['retrieved_docs']])}"
-    }
+ 
 
     # Chain creation for multimodal RAG
     chain_multimodal_rag = multi_modal_rag_chain(retriever_multi_vector_img)
@@ -125,6 +119,7 @@ def build_the_db(path_of_pdf, input_path, output_path):
 
 
 import json
+from langchain_openai import OpenAI
 
 PROCESSED_PDFS_FILE = "processed_pdfs.json"
 
@@ -162,12 +157,7 @@ def build_the_db_multi(file_paths, output_path):
             [], [], [], [], [], []
         )
         
-        # Mocking the agent response for accessing old data
-        agent = Agent(llm=None, vectorstore=retriever_multi_vector_img)
-        agent.retrieve = lambda state: {"retrieved_docs": retriever_multi_vector_img.search(state['prompt'], k=4)}
-        agent.answer = lambda state: {
-            "output": f"Generated response for prompt: {state['prompt']}, context: {', '.join([doc.page_content for doc in state['retrieved_docs']])}"
-        }
+
         
         # Chain creation for multimodal RAG
         chain_multimodal_rag = multi_modal_rag_chain(retriever_multi_vector_img)
@@ -232,14 +222,10 @@ def build_the_db_multi(file_paths, output_path):
         img_base64_list,
     )
     
-    # Use modified agent for retrieval
-    agent = Agent(llm=None, vectorstore=retriever_multi_vector_img)
 
-    # Mocking the prompt response
-    agent.retrieve = lambda state: {"retrieved_docs": retriever_multi_vector_img.search(state['prompt'], k=4)}
-    agent.answer = lambda state: {
-        "output": f"Generated response for prompt: {state['prompt']}, context: {', '.join([doc.page_content for doc in state['retrieved_docs']])}"
-    }
+
+
+
 
     # Chain creation for multimodal RAG
     chain_multimodal_rag = multi_modal_rag_chain(retriever_multi_vector_img)

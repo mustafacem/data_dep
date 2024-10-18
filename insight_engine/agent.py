@@ -172,7 +172,7 @@ class Agent:
         Returns:
             dict: A dictionary containing the retrieved documents.
         """
-        docs = self.vectorstore.similarity_search(query=state.get("prompt", ""), k=4)
+        docs = self.vectorstore.similarity_search(query=state.get("prompt", ""), k=self.k)
         return {"retrieved_docs": docs}
 
     def answer(self, state: AgentState) -> dict:

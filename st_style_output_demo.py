@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import ChatMessage
 from langchain_openai import ChatOpenAI
+from streamlit.delta_generator import DeltaGenerator
 from PIL import Image
 from insight_engine.pdf_extraction.pdf_extraction import topic_extraction
 from insight_engine.prompt.knowledge import COCA_COLA
@@ -59,7 +60,8 @@ audience = st.selectbox("Select Audience:", audiences)
 output_style = st.selectbox("Select Output Style:", output_styles)
 
 class StreamHandler(BaseCallbackHandler):
-    def __init__(self, container, initial_text="") -> None:
+    def __init__(self, container:DeltaGenerator, initial_text: str = "") -> None:
+        
         self.container = container
         self.text = initial_text
 
