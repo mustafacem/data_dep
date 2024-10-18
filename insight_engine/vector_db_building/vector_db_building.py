@@ -92,7 +92,7 @@ def build_the_db(path_of_pdf, input_path, output_path):
     delete_images_in_folder("figures")
 
     # Use vectorstore from insight_engine.vectordb
-    vectorstore = get_vectorstore(collection_name="mm_rag_cj_blog")
+    vectorstore = get_vectorstore(collection_name="insight_engine_rag_Store")
 
     # Create the multi-vector retriever for multimodal RAG
     retriever_multi_vector_img = create_multi_vector_retriever(
@@ -156,7 +156,7 @@ def build_the_db_multi(file_paths, output_path):
             raise ValueError("No previously processed PDFs available.")
         
         # Load previous data from the vectorstore
-        vectorstore = get_vectorstore(collection_name="mm_rag_cj_blog")
+        vectorstore = get_vectorstore(collection_name="insight_engine_rag_Store")
         retriever_multi_vector_img = create_multi_vector_retriever(
             vectorstore,
             [], [], [], [], [], []
@@ -219,7 +219,7 @@ def build_the_db_multi(file_paths, output_path):
     delete_images_in_folder("figures")
 
     # Use vectorstore from insight_engine.vectordb
-    vectorstore = get_vectorstore(collection_name="mm_rag_cj_blog")
+    vectorstore = get_vectorstore(collection_name="insight_engine_rag_Store")
 
     # Create the multi-vector retriever for multimodal RAG
     retriever_multi_vector_img = create_multi_vector_retriever(
