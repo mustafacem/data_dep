@@ -9,6 +9,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from openai import OpenAI
+from PIL import Image
+import numpy as np
 
 # from pdf2image import *
 from unstructured.partition.pdf import partition_pdf
@@ -131,10 +133,25 @@ def image_summarize(img_base64, prompt):
     return msg.content
 
 
+def is_single_color(image_path):
+    """
+    Check if the image is a single-color image.
+    
+    image_path: Path to the image file.
+    
+    Returns: True if the image is a single-color image, False otherwise.
+    """
+    img = Image.open(image_path)
+    img_array = np.array(img)
+    
+    # Check if all pixel values in the image are the same
+    return np.all(img_array == img_array[0, 0])
+
+
 def generate_img_summaries(path):
     """
-    Generate summaries and base64 encoded strings for images
-    path: Path to list of .jpg files extracted by Unstructured
+    Generate summaries and base64 encoded strings for images, only if the image is not a single-color image.
+    path: Path to the list of .jpg files extracted by Unstructured.
     """
 
     # Store base64 encoded images
@@ -152,12 +169,14 @@ def generate_img_summaries(path):
     for img_file in sorted(os.listdir(path)):
         if img_file.endswith(".jpg"):
             img_path = os.path.join(path, img_file)
-            base64_image = encode_image(img_path)
-            img_base64_list.append(base64_image)
-            image_summaries.append(image_summarize(base64_image, prompt))
+            
+            # Check if the image is not a single-color image
+            if not is_single_color(img_path):
+                base64_image = encode_image(img_path)
+                img_base64_list.append(base64_image)
+                image_summaries.append(image_summarize(base64_image, prompt))
 
     return img_base64_list, image_summaries
-
 
 def find_fig_text(text):
     pattern = r"Fig\..*?\."
