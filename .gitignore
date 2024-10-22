@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+!rag_creation/__pycache__/
+
 # C extensions
 *.so
 
