@@ -31,10 +31,6 @@ from insight_engine.word_cloud.word_cloud import (
 
 import nltk
 
-
-# Call this function when loading
-
-
 # nltk downloads if needed
 nltk.download('punkt_tab')
 nltk.download('wordnet')
@@ -60,8 +56,7 @@ audience = st.selectbox("Select Audience:", audiences)
 output_style = st.selectbox("Select Output Style:", output_styles)
 
 class StreamHandler(BaseCallbackHandler):
-    def __init__(self, container:DeltaGenerator, initial_text: str = "") -> None:
-        
+    def __init__(self, container: DeltaGenerator, initial_text: str = "") -> None:
         self.container = container
         self.text = initial_text
 
@@ -74,7 +69,8 @@ if st.button("Generate Report") and practice_group and output_style:
     sys_prompt = PRACTICE_GROUPS[practice_group]
     report_structure = REPORT_STRUCTURES[output_style]
 
-    st.session_state["messages"] = [
+    # Storing report-related messages in a separate session key
+    st.session_state["report_messages"] = [
         ChatMessage(
             role="system",
             content=sys_prompt.format(
@@ -90,8 +86,8 @@ if st.button("Generate Report") and practice_group and output_style:
             streaming=True,
             callbacks=[stream_handler],
         )
-        response = llm.invoke(st.session_state.messages)
-        st.session_state.messages.append(
+        response = llm.invoke(st.session_state["report_messages"])
+        st.session_state["report_messages"].append(
             ChatMessage(role="assistant", content=response.content)
         )
 
@@ -248,15 +244,14 @@ if st.button("Process Multiple PDFs"):
 st.header("Chat with your PDFs")
 
 # Initialize or retrieve the session state for storing chat history
-if "messages" not in st.session_state:
-    st.session_state["messages"] = []
+if "chat_messages" not in st.session_state:
+    st.session_state["chat_messages"] = []
 
-# User input
+# User input for chat functionality
 user_input = st.chat_input("Enter your query:")
 
-# If user input is provided, add it to chat history
 if user_input:
-    st.session_state["messages"].append({"role": "user", "content": user_input})
+    st.session_state["chat_messages"].append({"role": "user", "content": user_input})
     
     retriever_multi_vector_img = st.session_state.get("retriever_multi_vector_img")
     chain_multimodal_rag = st.session_state.get("chain_multimodal_rag")
@@ -268,15 +263,15 @@ if user_input:
         )
         
         # Store the response in the session state as the assistant's message
-        st.session_state["messages"].append({"role": "assistant", "content": content})
+        st.session_state["chat_messages"].append({"role": "assistant", "content": content})
 
         # Display the chat history including the latest user and assistant messages
-        for msg in st.session_state["messages"]:
+        for msg in st.session_state["chat_messages"]:
             if msg["role"] == "user":
                 st.chat_message("user").write(msg["content"])
             else:
                 st.chat_message("assistant").write(msg["content"])
-                
+
         # Display the image if available
         if image:
             base64_image = image
@@ -284,8 +279,7 @@ if user_input:
             image = Image.open(BytesIO(decoded_image))
             st.image(image, caption="Base64 Decoded Image")
     else:
-        retriever_multi_vector_img, chain_multimodal_rag, whole_str = build_the_db_multi(emp_files
-        , output_path)
+        retriever_multi_vector_img, chain_multimodal_rag, whole_str = build_the_db_multi(emp_files, output_path)
         st.session_state["retriever_multi_vector_img"] = retriever_multi_vector_img
         st.session_state["chain_multimodal_rag"] = chain_multimodal_rag
         
@@ -296,10 +290,10 @@ if user_input:
             )
             
             # Store the response in the session state as the assistant's message
-            st.session_state["messages"].append({"role": "assistant", "content": content})
+            st.session_state["chat_messages"].append({"role": "assistant", "content": content})
 
             # Display the chat history including the latest user and assistant messages
-            for msg in st.session_state["messages"]:
+            for msg in st.session_state["chat_messages"]:
                 if msg["role"] == "user":
                     st.chat_message("user").write(msg["content"])
                 else:
@@ -313,8 +307,8 @@ if user_input:
                 st.image(image, caption="Base64 Decoded Image")
 else:
     # Display the chat history if no new input was given
-    for msg in st.session_state["messages"]:
+    for msg in st.session_state["chat_messages"]:
         if msg["role"] == "user":
             st.chat_message("user").write(msg["content"])
         else:
-            st.chat_message("assistant").write(msg["content"])  
+            st.chat_message("assistant").write(msg["content"])

@@ -172,7 +172,7 @@ def multi_modal_rag_chain(retriever):
 
 
 def call_for_answer(query, retriever_multi_vector_img, chain_multimodal_rag):
-    docs = retriever_multi_vector_img.get_relevant_documents(query, limit=7)
+    docs = retriever_multi_vector_img.invoke(query, limit=7)
     img = ""
     con = ""
     for x in docs:
